@@ -256,23 +256,23 @@ wear_min['L2'] = (wear_min.maxValue <= wear_L2_max)
 wear_min['L2_id'] = (wear_min.L2 != wear_min.L2.shift()).cumsum()
 wear_min['L2_count'] = wear_min.groupby(['L2', 'L2_id']).cumcount(ascending=False) + 1
 wear_min.loc[~wear_min['L2'], 'L2_count'] = 0
-if wear_min['L2'].any():
-    wear_exception = wear_min[(wear_min['L2_count'] != 0)]
-    wear_exception.loc[wear_exception['L2'], 'exception type'] = 'Wire Wear'
 
+if wear_min['L2'].any():
+    wear_exception_full = wear_min[(wear_min['L2_count'] != 0)]
+    wear_exception_full.loc[wear_exception_full['L2'], 'exception type'] = 'Wire Wear'
+
+    wear_exception = wear_exception_full\
+        .groupby(['exception type', 'L2_id'])\
+        .agg({'Km': ['min', 'max'], 'maxValue': ['min', 'max']})
+    wear_exception.columns = wear_exception.columns.map('_'.join)
     wear_exception = wear_exception\
-        .groupby(['exception type', 'L2_id'])[['Km', 'maxValue']]\
-        .min()\
-        .rename({'Km': 'startKm'}, axis=1)\
-        .join(wear_exception\
-            .groupby(['exception type', 'L2_id'])[['Km']]\
-            .max()\
-            .rename({'Km': 'endKm'}, axis=1))\
         .assign(key=1)\
-        .merge(wear_exception.assign(key=1), on='key')\
-        .query('`maxValue_x` == `maxValue_y` & `Km`.between(`startKm`, `endKm`)')\
-        .drop(columns=['key', 'maxValue_y', 'L2_id', 'L2_count', 'wear1', 'wear2', 'wear3', 'wear4', 'L2'])\
-        .rename({'Km': 'maxLocation', 'maxValue_x': 'maxValue'}, axis=1)\
+        .merge(wear_exception_full.assign(key=1), on='key')\
+        .query('`maxValue_max` == `maxValue` & `Km`.between(`Km_min`, `Km_max`)')\
+        .drop(columns=['maxValue_min', 'key', 'maxValue', 'L2_id', 'L2_count',
+                       'wear1', 'wear2', 'wear3', 'wear4', 'L2'])\
+        .rename({'Km': 'maxLocation', 'Km_min': 'startKm', 'Km_max': 'endKm',
+                 'maxValue_max': 'maxValue'}, axis=1)\
         .reset_index()\
         .drop('index', axis=1)
 
@@ -283,8 +283,15 @@ if wear_min['L2'].any():
         .reset_index()\
         .drop('index', axis=1)
 
+    # ------ defining alarm level depending on maxValue only ------
+    wear_exception.loc[(wear_exception['maxValue'] <= wear_L1_max), 'level'] = 'L1'
+    wear_exception['level'] = wear_exception['level'].fillna('L2')
+    wear_exception = wear_exception[['exception type', 'level', 'startKm', 'endKm', 'length', 'maxValue', 'maxLocation', 'track type',
+         'location type']]
+    # ------ defining alarm level depending on maxValue only ------
+
 else:
-    wear_exception = pd.DataFrame(columns=['exception type', 'startKm', 'endKm', 'length', 'maxValue', 'maxLocation', 'track type', 'location type'])
+    wear_exception = pd.DataFrame(columns=['exception type', 'level', 'startKm', 'endKm', 'length', 'maxValue', 'maxLocation', 'track type', 'location type'])
 # ---------- Wire Wear exception ----------
 
 # ---------- Left stagger exception ----------
@@ -357,10 +364,13 @@ if stagger_left['open_curve_L3'].any() \
     stagger_left_exception.loc[(stagger_left_exception['maxValue'] >= tunnel_curve_stagger_L1_min) & (
                 stagger_left_exception['location type'] == 'Tunnel'), 'level'] = 'L1'
     stagger_left_exception['level'] = stagger_left_exception['level'].fillna('L3')
+    stagger_left_exception = stagger_left_exception[
+        ['exception type', 'level', 'startKm', 'endKm', 'length', 'maxValue', 'maxLocation', 'track type',
+         'location type']]
     # ------ defining alarm level depending on maxValue only ------
 
 else:
-    stagger_left_exception = pd.DataFrame(columns=['exception type', 'startKm', 'endKm', 'length', 'maxValue', 'maxLocation', 'track type', 'location type'])
+    stagger_left_exception = pd.DataFrame(columns=['exception type', 'level', 'startKm', 'endKm', 'length', 'maxValue', 'maxLocation', 'track type', 'location type'])
 # ---------- Left stagger exception ----------
 
 # ---------- Right stagger exception ----------
@@ -435,10 +445,12 @@ if stagger_right['open_curve_L3'].any() \
     stagger_right_exception.loc[(stagger_right_exception['maxValue'] <= -tunnel_curve_stagger_L1_min) & (
                 stagger_right_exception['location type'] == 'Tunnel'), 'level'] = 'L1'
     stagger_right_exception['level'] = stagger_right_exception['level'].fillna('L3')
+    stagger_right_exception = stagger_right_exception[
+        ['exception type', 'level', 'startKm', 'endKm', 'length', 'maxValue', 'maxLocation', 'track type', 'location type']]
     # ------ defining alarm level depends on maxValue only ------
 
 else:
-    stagger_right_exception = pd.DataFrame(columns=['exception type', 'startKm', 'endKm', 'length', 'maxValue', 'maxLocation', 'track type', 'location type'])
+    stagger_right_exception = pd.DataFrame(columns=['exception type', 'level', 'startKm', 'endKm', 'length', 'maxValue', 'maxLocation', 'track type', 'location type'])
 
 
 # ---------- Right stagger exception ----------
