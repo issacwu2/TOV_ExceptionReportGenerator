@@ -3,11 +3,11 @@ from datetime import datetime
 
 print('read raw data and metadata start:', datetime.now())
 
-raw = pd.read_excel('TWL may-aug-nov data reports/20211124_TWL_DT.xlsx', sheet_name='Data Report 1')
+raw = pd.read_excel('testing-rawdata.xlsx', sheet_name='AEL UT SHR-AWE')
 
 # --------- Load metadata ----------
-track_type = pd.read_excel('TWL metadata.xlsx', sheet_name='DT track type')
-location_type = pd.read_excel('TWL metadata.xlsx', sheet_name='location type')
+track_type = pd.read_excel('AEL metadata.xlsx', sheet_name='DT track type')
+location_type = pd.read_excel('AEL metadata.xlsx', sheet_name='location type')
 threshold = pd.read_excel('TWL metadata.xlsx', sheet_name='threshold')
 # --------- Load metadata ----------
 print('read raw data and metadata end:', datetime.now())
@@ -34,7 +34,7 @@ print('set raw data accuracy to 0.001km end:', datetime.now())
 print('preprocess raw data start:', datetime.now())
 # ---------- To remove unreasonable CW height data ----------
 WH_min = raw.groupby('Km')[['height1', 'height2', 'height3', 'height4']].min().reset_index()
-WH_min.loc[(WH_min['height1'] < 2000) | (WH_min['height2'] < 2000) | (WH_min['height3'] < 2000) | (WH_min['height4'] < 2000), 'error'] = WH_min['Km']
+WH_min.loc[(WH_min['height1'] < 3500) | (WH_min['height2'] < 3500) | (WH_min['height3'] < 3500) | (WH_min['height4'] < 3500), 'error'] = WH_min['Km']
 WH_error = WH_min['error'].dropna().to_list()
 WH = raw[['Km', 'height1', 'height2', 'height3', 'height4']]
 WH_cleaned = WH[~WH.Km.isin(WH_error)]
@@ -185,22 +185,21 @@ WH_cleaned_min['L2_id'] = (WH_cleaned_min.L2 != WH_cleaned_min.L2.shift()).cumsu
 WH_cleaned_min['L2_count'] = WH_cleaned_min.groupby(['L2', 'L2_id']).cumcount(ascending=False) + 1
 WH_cleaned_min.loc[~WH_cleaned_min['L2'], 'L2_count'] = 0
 if WH_cleaned_min['L2'].any():
-    low_height_exception = WH_cleaned_min[(WH_cleaned_min['L2_count'] != 0)]
-    low_height_exception.loc[low_height_exception['L2'], 'exception type'] = 'Low Height'
+    low_height_exception_full = WH_cleaned_min[(WH_cleaned_min['L2_count'] != 0)]
+    low_height_exception_full.loc[low_height_exception_full['L2'], 'exception type'] = 'Low Height'
 
+    low_height_exception = low_height_exception_full\
+        .groupby(['exception type', 'L2_id'])\
+        .agg({'Km': ['min', 'max'], 'maxValue': ['min', 'max']})
+    low_height_exception.columns = low_height_exception.columns.map('_'.join)
     low_height_exception = low_height_exception\
-        .groupby(['exception type', 'L2_id'])[['Km', 'maxValue']]\
-        .min()\
-        .rename({'Km': 'startKm'}, axis=1)\
-        .join(low_height_exception\
-            .groupby(['exception type', 'L2_id'])[['Km']]\
-            .max()\
-            .rename({'Km': 'endKm'}, axis=1))\
         .assign(key=1)\
-        .merge(low_height_exception.assign(key=1), on='key')\
-        .query('`maxValue_x` == `maxValue_y` & `Km`.between(`startKm`, `endKm`)')\
-        .drop(columns=['key', 'maxValue_y', 'L2_id', 'L2_count', 'height1', 'height2', 'height3', 'height4', 'L2'])\
-        .rename({'Km': 'maxLocation', 'maxValue_x': 'maxValue'}, axis=1)\
+        .merge(low_height_exception_full.assign(key=1), on='key')\
+        .query('`maxValue_min` == `maxValue` & `Km`.between(`Km_min`, `Km_max`)')\
+        .drop(columns=['maxValue_max', 'key', 'maxValue', 'L2_id', 'L2_count', 'height1',
+                       'height2', 'height3', 'height4', 'L2'])\
+        .rename({'Km': 'maxLocation', 'Km_min': 'startKm', 'Km_max': 'endKm',
+                 'maxValue_min': 'maxValue'}, axis=1)\
         .reset_index()\
         .drop('index', axis=1)
 
@@ -210,6 +209,14 @@ if WH_cleaned_min['L2'].any():
         .drop_duplicates(subset=['exception type', 'startKm', 'endKm'])\
         .reset_index()\
         .drop('index', axis=1)
+
+    # ------ defining alarm level depending on maxValue only ------
+    low_height_exception.loc[(low_height_exception['maxValue'] <= low_height_L1_max), 'level'] = 'L1'
+    low_height_exception['level'] = low_height_exception['level'].fillna('L2')
+    low_height_exception = low_height_exception[
+        ['exception type', 'level', 'startKm', 'endKm', 'length', 'maxValue', 'maxLocation', 'track type',
+         'location type']]
+    # ------ defining alarm level depending on maxValue only ------
 
 else:
     low_height_exception = pd.DataFrame(columns=['exception type', 'startKm', 'endKm', 'length', 'maxValue', 'maxLocation', 'track type', 'location type'])
@@ -221,22 +228,21 @@ WH_cleaned_max['L2_id'] = (WH_cleaned_max.L2 != WH_cleaned_max.L2.shift()).cumsu
 WH_cleaned_max['L2_count'] = WH_cleaned_max.groupby(['L2', 'L2_id']).cumcount(ascending=False) + 1
 WH_cleaned_max.loc[~WH_cleaned_max['L2'], 'L2_count'] = 0
 if WH_cleaned_max['L2'].any():
-    high_height_exception = WH_cleaned_max[(WH_cleaned_max['L2_count'] != 0)]
-    high_height_exception.loc[high_height_exception['L2'], 'exception type'] = 'High Height'
+    high_height_exception_full = WH_cleaned_max[(WH_cleaned_max['L2_count'] != 0)]
+    high_height_exception_full.loc[high_height_exception_full['L2'], 'exception type'] = 'High Height'
 
+    high_height_exception = high_height_exception_full\
+        .groupby(['exception type', 'L2_id'])\
+        .agg({'Km': ['min', 'max'], 'maxValue': ['min', 'max']})
+    high_height_exception.columns = high_height_exception.columns.map('_'.join)
     high_height_exception = high_height_exception\
-        .groupby(['exception type', 'L2_id'])[['Km', 'maxValue']]\
-        .min()\
-        .rename({'Km': 'startKm'}, axis=1)\
-        .join(high_height_exception\
-            .groupby(['exception type', 'L2_id'])[['Km']]\
-            .max()\
-            .rename({'Km': 'endKm'}, axis=1))\
         .assign(key=1)\
-        .merge(high_height_exception.assign(key=1), on='key')\
-        .query('`maxValue_x` == `maxValue_y` & `Km`.between(`startKm`, `endKm`)')\
-        .drop(columns=['key', 'maxValue_y', 'L2_id', 'L2_count', 'height1', 'height2', 'height3', 'height4', 'L2'])\
-        .rename({'Km': 'maxLocation', 'maxValue_x': 'maxValue'}, axis=1)\
+        .merge(high_height_exception_full.assign(key=1), on='key')\
+        .query('`maxValue_max` == `maxValue` & `Km`.between(`Km_min`, `Km_max`)')\
+        .drop(columns=['maxValue_min', 'key', 'maxValue', 'L2_id', 'L2_count', 'height1',
+                       'height2', 'height3', 'height4', 'L2'])\
+        .rename({'Km': 'maxLocation', 'Km_min': 'startKm', 'Km_max': 'endKm',
+                 'maxValue_max': 'maxValue'}, axis=1)\
         .reset_index()\
         .drop('index', axis=1)
 
@@ -247,8 +253,15 @@ if WH_cleaned_max['L2'].any():
         .reset_index()\
         .drop('index', axis=1)
 
+    # ------ defining alarm level depending on maxValue only ------
+    high_height_exception.loc[(high_height_exception['maxValue'] >= high_height_L1_min), 'level'] = 'L1'
+    high_height_exception['level'] = high_height_exception['level'].fillna('L2')
+    high_height_exception = high_height_exception[['exception type', 'level', 'startKm', 'endKm', 'length', 'maxValue', 'maxLocation', 'track type',
+         'location type']]
+    # ------ defining alarm level depending on maxValue only ------
+
 else:
-    high_height_exception = pd.DataFrame(columns=['exception type', 'startKm', 'endKm', 'length', 'maxValue', 'maxLocation', 'track type', 'location type'])
+    high_height_exception = pd.DataFrame(columns=['exception type', 'level', 'startKm', 'endKm', 'length', 'maxValue', 'maxLocation', 'track type', 'location type'])
 # ---------- high height exception ----------
 
 # ---------- Wire Wear exception ----------
@@ -268,11 +281,11 @@ if wear_min['L2'].any():
     wear_exception = wear_exception\
         .assign(key=1)\
         .merge(wear_exception_full.assign(key=1), on='key')\
-        .query('`maxValue_max` == `maxValue` & `Km`.between(`Km_min`, `Km_max`)')\
-        .drop(columns=['maxValue_min', 'key', 'maxValue', 'L2_id', 'L2_count',
+        .query('`maxValue_min` == `maxValue` & `Km`.between(`Km_min`, `Km_max`)')\
+        .drop(columns=['maxValue_max', 'key', 'maxValue', 'L2_id', 'L2_count',
                        'wear1', 'wear2', 'wear3', 'wear4', 'L2'])\
         .rename({'Km': 'maxLocation', 'Km_min': 'startKm', 'Km_max': 'endKm',
-                 'maxValue_max': 'maxValue'}, axis=1)\
+                 'maxValue_min': 'maxValue'}, axis=1)\
         .reset_index()\
         .drop('index', axis=1)
 
@@ -457,7 +470,7 @@ else:
 print('generating exception end:', datetime.now())
 
 # ---------- output results ----------
-with pd.ExcelWriter('TWL_nov_new.xlsx') as writer:
+with pd.ExcelWriter('AEL-UT-SHR-AWE.xlsx') as writer:
     wear_exception.to_excel(writer, sheet_name='wear exception')
     low_height_exception.to_excel(writer, sheet_name='low height exception')
     high_height_exception.to_excel(writer, sheet_name='high height exception')
