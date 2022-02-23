@@ -414,7 +414,7 @@ else:
 
 # ---------- Right stagger exception ----------
 stagger_right['open_curve_L1'] = ((stagger_right.maxValue <= -open_curve_stagger_L1_min) & (stagger_right['track type'] == 'Curve') & (stagger_right['location type'] != 'Tunnel'))
-stagger_right['open_curve_L2'] = ((stagger_right.maxValue <= -open_curve_stagger_L2_min) & (stagger_right.maxValue > -open_curve_stagger_L2_min) & (stagger_right['track type'] == 'Curve') & (stagger_right['location type'] != 'Tunnel'))
+stagger_right['open_curve_L2'] = ((stagger_right.maxValue <= -open_curve_stagger_L2_min) & (stagger_right.maxValue > -open_curve_stagger_L2_max) & (stagger_right['track type'] == 'Curve') & (stagger_right['location type'] != 'Tunnel'))
 stagger_right['open_curve_L3'] = ((stagger_right.maxValue <= -open_curve_stagger_L3_min) & (stagger_right.maxValue > -open_curve_stagger_L3_max) & (stagger_right['track type'] == 'Curve') & (stagger_right['location type'] != 'Tunnel'))
 stagger_right['open_tangent_L1'] = ((stagger_right.maxValue <= -open_tangent_stagger_L1_min) & (stagger_right['track type'] == 'Tangent') & (stagger_right['location type'] != 'Tunnel'))
 stagger_right['open_tangent_L2'] = ((stagger_right.maxValue <= -open_tangent_stagger_L2_min) & (stagger_right.maxValue > -open_tangent_stagger_L2_max) & (stagger_right['track type'] == 'Tangent') & (stagger_right['location type'] != 'Tunnel'))
