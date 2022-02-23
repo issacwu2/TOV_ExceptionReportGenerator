@@ -374,7 +374,7 @@ if stagger_left['open_curve_L1'].any() \
                   'open_curve_L1_id', 'open_curve_L2_id', 'open_curve_L3_id',
                   'open_tangent_L1_id', 'open_tangent_L2_id', 'open_tangent_L3_id',
                   'tunnel_L1_id', 'tunnel_L2_id', 'tunnel_L3_id'])[['Km', 'maxValue']]\
-        .max()\
+        .min()\
         .rename({'Km': 'startKm'}, axis=1)\
         .join(stagger_left_exception\
             .groupby(['exception type',
