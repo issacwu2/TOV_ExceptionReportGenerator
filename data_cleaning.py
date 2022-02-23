@@ -380,32 +380,30 @@ stagger_right.loc[~stagger_right['tunnel_L3'], 'tunnel_L3_count'] = 0
 if stagger_right['open_curve_L3'].any() \
         or stagger_right['open_tangent_L3'].any() \
         or stagger_right['tunnel_L3'].any():
-    stagger_right_exception = stagger_right[(stagger_right['open_curve_L3_count'] != 0)
+
+    stagger_right_exception_full = stagger_right[(stagger_right['open_curve_L3_count'] != 0)
                                     | (stagger_right['open_tangent_L3_count'] != 0)
                                     | (stagger_right['tunnel_L3_count'] != 0)]
 
 
-    stagger_right_exception.loc[stagger_right_exception['open_curve_L3'], 'exception type'] = 'Stagger'
-    stagger_right_exception.loc[stagger_right_exception['open_tangent_L3'], 'exception type'] = 'Stagger'
-    stagger_right_exception.loc[stagger_right_exception['tunnel_L3'], 'exception type'] = 'Stagger'
+    stagger_right_exception_full.loc[stagger_right_exception_full['open_curve_L3'], 'exception type'] = 'Stagger'
+    stagger_right_exception_full.loc[stagger_right_exception_full['open_tangent_L3'], 'exception type'] = 'Stagger'
+    stagger_right_exception_full.loc[stagger_right_exception_full['tunnel_L3'], 'exception type'] = 'Stagger'
 
+    stagger_right_exception = stagger_right_exception_full\
+        .groupby(['exception type', 'open_curve_L3_id', 'open_tangent_L3_id', 'tunnel_L3_id'])\
+        .agg({'Km': ['min', 'max'], 'maxValue': ['min', 'max']})
+    stagger_right_exception.columns = stagger_right_exception.columns.map('_'.join)
     stagger_right_exception = stagger_right_exception\
-        .groupby(['exception type', 'open_curve_L3_id', 'open_tangent_L3_id', 'tunnel_L3_id'])[['Km', 'maxValue']]\
-        .min()\
-        .rename({'Km': 'startKm'}, axis=1)\
-        .join(stagger_right_exception\
-            .groupby(['exception type', 'open_curve_L3_id', 'open_tangent_L3_id', 'tunnel_L3_id'])[['Km']]\
-            .max()\
-            .rename({'Km': 'endKm'}, axis=1))\
         .assign(key=1)\
-        .merge(stagger_right_exception.assign(key=1), on='key')\
-        .query('`maxValue_x` == `maxValue_y` & `Km`.between(`startKm`, `endKm`)')\
-        .drop(columns=['key', 'maxValue_y', 'stagger1', 'stagger2', 'stagger3', 'stagger4',
+        .merge(stagger_right_exception_full.assign(key=1), on='key')\
+        .query('`maxValue_max` == `maxValue` & `Km`.between(`Km_min`, `Km_max`)')\
+        .drop(columns=['maxValue_min', 'key', 'maxValue', 'stagger1', 'stagger2', 'stagger3', 'stagger4',
                        'open_curve_L3', 'open_tangent_L3', 'tunnel_L3', 'open_curve_L3_id',
                        'open_tangent_L3_id', 'tunnel_L3_id', 'open_curve_L3_count',
                        'open_tangent_L3_count', 'tunnel_L3_count'
                        ])\
-        .rename({'Km': 'maxLocation', 'maxValue_x': 'maxValue'}, axis=1)\
+        .rename({'Km': 'maxLocation', 'Km_min': 'startKm', 'Km_max': 'endKm', 'maxValue_max': 'maxValue'}, axis=1)\
         .reset_index()\
         .drop('index', axis=1)
 
@@ -447,7 +445,7 @@ else:
 print('generating exception end:', datetime.now())
 
 # ---------- output results ----------
-with pd.ExcelWriter('TWL_nov.xlsx') as writer:
+with pd.ExcelWriter('TWL_nov_new.xlsx') as writer:
     wear_exception.to_excel(writer, sheet_name='wear exception')
     low_height_exception.to_excel(writer, sheet_name='low height exception')
     high_height_exception.to_excel(writer, sheet_name='high height exception')
