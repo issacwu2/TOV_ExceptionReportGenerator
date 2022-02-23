@@ -180,31 +180,26 @@ print('load threshold value end:', datetime.now())
 
 print('generating exception start:', datetime.now())
 # ---------- low height exception ----------
-WH_cleaned_min['L1'] = (WH_cleaned_min.maxValue <= low_height_L1_max)
-WH_cleaned_min['L2'] = ((WH_cleaned_min.maxValue > low_height_L2_min) & (WH_cleaned_min.maxValue <= low_height_L2_max))
-WH_cleaned_min['L1_id'] = (WH_cleaned_min.L1 != WH_cleaned_min.L1.shift()).cumsum()
+WH_cleaned_min['L2'] = (WH_cleaned_min.maxValue <= low_height_L2_max)
 WH_cleaned_min['L2_id'] = (WH_cleaned_min.L2 != WH_cleaned_min.L2.shift()).cumsum()
-WH_cleaned_min['L1_count'] = WH_cleaned_min.groupby(['L1', 'L1_id']).cumcount(ascending=False) + 1
 WH_cleaned_min['L2_count'] = WH_cleaned_min.groupby(['L2', 'L2_id']).cumcount(ascending=False) + 1
-WH_cleaned_min.loc[~WH_cleaned_min['L1'], 'L1_count'] = 0
 WH_cleaned_min.loc[~WH_cleaned_min['L2'], 'L2_count'] = 0
-if WH_cleaned_min['L1'].any() or WH_cleaned_min['L2'].any():
-    low_height_exception = WH_cleaned_min[(WH_cleaned_min['L1_count'] != 0) | (WH_cleaned_min['L2_count'] != 0)]
-    low_height_exception.loc[low_height_exception['L1'], 'exception type'] = 'Low Height L1'
-    low_height_exception.loc[low_height_exception['L2'], 'exception type'] = 'Low Height L2'
+if WH_cleaned_min['L2'].any():
+    low_height_exception = WH_cleaned_min[(WH_cleaned_min['L2_count'] != 0)]
+    low_height_exception.loc[low_height_exception['L2'], 'exception type'] = 'Low Height'
 
     low_height_exception = low_height_exception\
-        .groupby(['exception type', 'L1_id', 'L2_id'])[['Km', 'maxValue']]\
+        .groupby(['exception type', 'L2_id'])[['Km', 'maxValue']]\
         .min()\
         .rename({'Km': 'startKm'}, axis=1)\
         .join(low_height_exception\
-            .groupby(['exception type', 'L1_id', 'L2_id'])[['Km']]\
+            .groupby(['exception type', 'L2_id'])[['Km']]\
             .max()\
             .rename({'Km': 'endKm'}, axis=1))\
         .assign(key=1)\
         .merge(low_height_exception.assign(key=1), on='key')\
         .query('`maxValue_x` == `maxValue_y` & `Km`.between(`startKm`, `endKm`)')\
-        .drop(columns=['key', 'maxValue_y', 'L1_id', 'L2_id', 'L1_count', 'L2_count', 'height1', 'height2', 'height3', 'height4', 'L1', 'L2'])\
+        .drop(columns=['key', 'maxValue_y', 'L2_id', 'L2_count', 'height1', 'height2', 'height3', 'height4', 'L2'])\
         .rename({'Km': 'maxLocation', 'maxValue_x': 'maxValue'}, axis=1)\
         .reset_index()\
         .drop('index', axis=1)
@@ -221,31 +216,26 @@ else:
 # ---------- low height exception ----------
 
 # ---------- high height exception ----------
-WH_cleaned_max['L1'] = (WH_cleaned_max.maxValue >= high_height_L1_min)
-WH_cleaned_max['L2'] = ((WH_cleaned_max.maxValue >= high_height_L2_min) & (WH_cleaned_max.maxValue < high_height_L2_max))
-WH_cleaned_max['L1_id'] = (WH_cleaned_max.L1 != WH_cleaned_max.L1.shift()).cumsum()
+WH_cleaned_max['L2'] = (WH_cleaned_max.maxValue >= high_height_L2_min)
 WH_cleaned_max['L2_id'] = (WH_cleaned_max.L2 != WH_cleaned_max.L2.shift()).cumsum()
-WH_cleaned_max['L1_count'] = WH_cleaned_max.groupby(['L1', 'L1_id']).cumcount(ascending=False) + 1
 WH_cleaned_max['L2_count'] = WH_cleaned_max.groupby(['L2', 'L2_id']).cumcount(ascending=False) + 1
-WH_cleaned_max.loc[~WH_cleaned_max['L1'], 'L1_count'] = 0
 WH_cleaned_max.loc[~WH_cleaned_max['L2'], 'L2_count'] = 0
-if WH_cleaned_max['L1'].any() or WH_cleaned_max['L2'].any():
-    high_height_exception = WH_cleaned_max[(WH_cleaned_max['L1_count'] != 0) | (WH_cleaned_max['L2_count'] != 0)]
-    high_height_exception.loc[high_height_exception['L1'], 'exception type'] = 'High Height L1'
-    high_height_exception.loc[high_height_exception['L2'], 'exception type'] = 'High Height L2'
+if WH_cleaned_max['L2'].any():
+    high_height_exception = WH_cleaned_max[(WH_cleaned_max['L2_count'] != 0)]
+    high_height_exception.loc[high_height_exception['L2'], 'exception type'] = 'High Height'
 
     high_height_exception = high_height_exception\
-        .groupby(['exception type', 'L1_id', 'L2_id'])[['Km', 'maxValue']]\
+        .groupby(['exception type', 'L2_id'])[['Km', 'maxValue']]\
         .min()\
         .rename({'Km': 'startKm'}, axis=1)\
         .join(high_height_exception\
-            .groupby(['exception type', 'L1_id', 'L2_id'])[['Km']]\
+            .groupby(['exception type', 'L2_id'])[['Km']]\
             .max()\
             .rename({'Km': 'endKm'}, axis=1))\
         .assign(key=1)\
         .merge(high_height_exception.assign(key=1), on='key')\
         .query('`maxValue_x` == `maxValue_y` & `Km`.between(`startKm`, `endKm`)')\
-        .drop(columns=['key', 'maxValue_y', 'L1_id', 'L2_id', 'L1_count', 'L2_count', 'height1', 'height2', 'height3', 'height4', 'L1', 'L2'])\
+        .drop(columns=['key', 'maxValue_y', 'L2_id', 'L2_count', 'height1', 'height2', 'height3', 'height4', 'L2'])\
         .rename({'Km': 'maxLocation', 'maxValue_x': 'maxValue'}, axis=1)\
         .reset_index()\
         .drop('index', axis=1)
@@ -262,31 +252,26 @@ else:
 # ---------- high height exception ----------
 
 # ---------- Wire Wear exception ----------
-wear_min['L1'] = (wear_min.maxValue <= wear_L1_max)
-wear_min['L2'] = ((wear_min.maxValue > wear_L2_min) & (wear_min.maxValue <= wear_L2_max))
-wear_min['L1_id'] = (wear_min.L1 != wear_min.L1.shift()).cumsum()
+wear_min['L2'] = (wear_min.maxValue <= wear_L2_max)
 wear_min['L2_id'] = (wear_min.L2 != wear_min.L2.shift()).cumsum()
-wear_min['L1_count'] = wear_min.groupby(['L1', 'L1_id']).cumcount(ascending=False) + 1
 wear_min['L2_count'] = wear_min.groupby(['L2', 'L2_id']).cumcount(ascending=False) + 1
-wear_min.loc[~wear_min['L1'], 'L1_count'] = 0
 wear_min.loc[~wear_min['L2'], 'L2_count'] = 0
-if wear_min['L1'].any() or wear_min['L2'].any():
-    wear_exception = wear_min[(wear_min['L1_count'] != 0) | (wear_min['L2_count'] != 0)]
-    wear_exception.loc[wear_exception['L1'], 'exception type'] = 'Wire Wear L1'
-    wear_exception.loc[wear_exception['L2'], 'exception type'] = 'Wire Wear L2'
+if wear_min['L2'].any():
+    wear_exception = wear_min[(wear_min['L2_count'] != 0)]
+    wear_exception.loc[wear_exception['L2'], 'exception type'] = 'Wire Wear'
 
     wear_exception = wear_exception\
-        .groupby(['exception type', 'L1_id', 'L2_id'])[['Km', 'maxValue']]\
+        .groupby(['exception type', 'L2_id'])[['Km', 'maxValue']]\
         .min()\
         .rename({'Km': 'startKm'}, axis=1)\
         .join(wear_exception\
-            .groupby(['exception type', 'L1_id', 'L2_id'])[['Km']]\
+            .groupby(['exception type', 'L2_id'])[['Km']]\
             .max()\
             .rename({'Km': 'endKm'}, axis=1))\
         .assign(key=1)\
         .merge(wear_exception.assign(key=1), on='key')\
         .query('`maxValue_x` == `maxValue_y` & `Km`.between(`startKm`, `endKm`)')\
-        .drop(columns=['key', 'maxValue_y', 'L1_id', 'L2_id', 'L1_count', 'L2_count', 'wear1', 'wear2', 'wear3', 'wear4', 'L1', 'L2'])\
+        .drop(columns=['key', 'maxValue_y', 'L2_id', 'L2_count', 'wear1', 'wear2', 'wear3', 'wear4', 'L2'])\
         .rename({'Km': 'maxLocation', 'maxValue_x': 'maxValue'}, axis=1)\
         .reset_index()\
         .drop('index', axis=1)
@@ -303,101 +288,44 @@ else:
 # ---------- Wire Wear exception ----------
 
 # ---------- Left stagger exception ----------
-stagger_left['open_curve_L1'] = ((stagger_left.maxValue >= open_curve_stagger_L1_min) & (stagger_left['track type'] == 'Curve') & (stagger_left['location type'] != 'Tunnel'))
-stagger_left['open_curve_L2'] = ((stagger_left.maxValue >= open_curve_stagger_L2_min) & (stagger_left.maxValue < open_curve_stagger_L2_max) & (stagger_left['track type'] == 'Curve') & (stagger_left['location type'] != 'Tunnel'))
-stagger_left['open_curve_L3'] = ((stagger_left.maxValue >= open_curve_stagger_L3_min) & (stagger_left.maxValue < open_curve_stagger_L3_max) & (stagger_left['track type'] == 'Curve') & (stagger_left['location type'] != 'Tunnel'))
-stagger_left['open_tangent_L1'] = ((stagger_left.maxValue >= open_tangent_stagger_L1_min) & (stagger_left['track type'] == 'Tangent') & (stagger_left['location type'] != 'Tunnel'))
-stagger_left['open_tangent_L2'] = ((stagger_left.maxValue >= open_tangent_stagger_L2_min) & (stagger_left.maxValue < open_tangent_stagger_L2_max) & (stagger_left['track type'] == 'Tangent') & (stagger_left['location type'] != 'Tunnel'))
-stagger_left['open_tangent_L3'] = ((stagger_left.maxValue >= open_tangent_stagger_L3_min) & (stagger_left.maxValue < open_tangent_stagger_L3_max) & (stagger_left['track type'] == 'Tangent') & (stagger_left['location type'] != 'Tunnel'))
-stagger_left['tunnel_L1'] = ((stagger_left.maxValue >= tunnel_curve_stagger_L1_min) & (stagger_left['location type'] == 'Tunnel'))
-stagger_left['tunnel_L2'] = ((stagger_left.maxValue >= tunnel_curve_stagger_L2_min) & (stagger_left.maxValue < tunnel_curve_stagger_L2_max) & (stagger_left['location type'] == 'Tunnel'))
-stagger_left['tunnel_L3'] = ((stagger_left.maxValue >= tunnel_curve_stagger_L3_min) & (stagger_left.maxValue < tunnel_curve_stagger_L3_max) & (stagger_left['location type'] == 'Tunnel'))
-stagger_left['open_curve_L1_id'] = (stagger_left.open_curve_L1 != stagger_left.open_curve_L1.shift()).cumsum()
-stagger_left['open_curve_L2_id'] = (stagger_left.open_curve_L2 != stagger_left.open_curve_L2.shift()).cumsum()
+stagger_left['open_curve_L3'] = ((stagger_left.maxValue >= open_curve_stagger_L3_min) & (stagger_left['track type'] == 'Curve') & (stagger_left['location type'] != 'Tunnel'))
+stagger_left['open_tangent_L3'] = ((stagger_left.maxValue >= open_tangent_stagger_L3_min) & (stagger_left['track type'] == 'Tangent') & (stagger_left['location type'] != 'Tunnel'))
+stagger_left['tunnel_L3'] = ((stagger_left.maxValue >= tunnel_curve_stagger_L3_min) & (stagger_left['location type'] == 'Tunnel'))
 stagger_left['open_curve_L3_id'] = (stagger_left.open_curve_L3 != stagger_left.open_curve_L3.shift()).cumsum()
-stagger_left['open_tangent_L1_id'] = (stagger_left.open_tangent_L1 != stagger_left.open_tangent_L1.shift()).cumsum()
-stagger_left['open_tangent_L2_id'] = (stagger_left.open_tangent_L2 != stagger_left.open_tangent_L2.shift()).cumsum()
 stagger_left['open_tangent_L3_id'] = (stagger_left.open_tangent_L3 != stagger_left.open_tangent_L3.shift()).cumsum()
-stagger_left['tunnel_L1_id'] = (stagger_left.tunnel_L1 != stagger_left.tunnel_L1.shift()).cumsum()
-stagger_left['tunnel_L2_id'] = (stagger_left.tunnel_L2 != stagger_left.tunnel_L2.shift()).cumsum()
 stagger_left['tunnel_L3_id'] = (stagger_left.tunnel_L3 != stagger_left.tunnel_L3.shift()).cumsum()
-stagger_left['open_curve_L1_count'] = stagger_left.groupby(['open_curve_L1', 'open_curve_L1_id']).cumcount(ascending=False) + 1
-stagger_left['open_curve_L2_count'] = stagger_left.groupby(['open_curve_L2', 'open_curve_L2_id']).cumcount(ascending=False) + 1
 stagger_left['open_curve_L3_count'] = stagger_left.groupby(['open_curve_L3', 'open_curve_L3_id']).cumcount(ascending=False) + 1
-stagger_left['open_tangent_L1_count'] = stagger_left.groupby(['open_tangent_L1', 'open_tangent_L1_id']).cumcount(ascending=False) + 1
-stagger_left['open_tangent_L2_count'] = stagger_left.groupby(['open_tangent_L2', 'open_tangent_L2_id']).cumcount(ascending=False) + 1
 stagger_left['open_tangent_L3_count'] = stagger_left.groupby(['open_tangent_L3', 'open_tangent_L3_id']).cumcount(ascending=False) + 1
-stagger_left['tunnel_L1_count'] = stagger_left.groupby(['tunnel_L1', 'tunnel_L1_id']).cumcount(ascending=False) + 1
-stagger_left['tunnel_L2_count'] = stagger_left.groupby(['tunnel_L2', 'tunnel_L2_id']).cumcount(ascending=False) + 1
 stagger_left['tunnel_L3_count'] = stagger_left.groupby(['tunnel_L3', 'tunnel_L3_id']).cumcount(ascending=False) + 1
-stagger_left.loc[~stagger_left['open_curve_L1'], 'open_curve_L1_count'] = 0
-stagger_left.loc[~stagger_left['open_curve_L2'], 'open_curve_L2_count'] = 0
 stagger_left.loc[~stagger_left['open_curve_L3'], 'open_curve_L3_count'] = 0
-stagger_left.loc[~stagger_left['open_tangent_L1'], 'open_tangent_L1_count'] = 0
-stagger_left.loc[~stagger_left['open_tangent_L2'], 'open_tangent_L2_count'] = 0
 stagger_left.loc[~stagger_left['open_tangent_L3'], 'open_tangent_L3_count'] = 0
-stagger_left.loc[~stagger_left['tunnel_L1'], 'tunnel_L1_count'] = 0
-stagger_left.loc[~stagger_left['tunnel_L2'], 'tunnel_L2_count'] = 0
 stagger_left.loc[~stagger_left['tunnel_L3'], 'tunnel_L3_count'] = 0
 
-if stagger_left['open_curve_L1'].any() \
-        or stagger_left['open_curve_L2'].any() \
-        or stagger_left['open_curve_L3'].any() \
-        or stagger_left['open_tangent_L1'].any() \
-        or stagger_left['open_tangent_L2'].any() \
+if stagger_left['open_curve_L3'].any() \
         or stagger_left['open_tangent_L3'].any() \
-        or stagger_left['tunnel_L1'].any() \
-        or stagger_left['tunnel_L2'].any() \
         or stagger_left['tunnel_L3'].any():
-    stagger_left_exception = stagger_left[(stagger_left['open_curve_L1_count'] != 0)
-                                    | (stagger_left['open_curve_L2_count'] != 0)
-                                    | (stagger_left['open_curve_L3_count'] != 0)
-                                    | (stagger_left['open_tangent_L1_count'] != 0)
-                                    | (stagger_left['open_tangent_L2_count'] != 0)
+
+    stagger_left_exception_full = stagger_left[(stagger_left['open_curve_L3_count'] != 0)
                                     | (stagger_left['open_tangent_L3_count'] != 0)
-                                    | (stagger_left['tunnel_L1_count'] != 0)
-                                    | (stagger_left['tunnel_L2_count'] != 0)
                                     | (stagger_left['tunnel_L3_count'] != 0)]
 
-    stagger_left_exception.loc[stagger_left_exception['open_curve_L1'], 'exception type'] = 'Stagger L1'
-    stagger_left_exception.loc[stagger_left_exception['open_curve_L2'], 'exception type'] = 'Stagger L2'
-    stagger_left_exception.loc[stagger_left_exception['open_curve_L3'], 'exception type'] = 'Stagger L3'
-    stagger_left_exception.loc[stagger_left_exception['open_tangent_L1'], 'exception type'] = 'Stagger L1'
-    stagger_left_exception.loc[stagger_left_exception['open_tangent_L2'], 'exception type'] = 'Stagger L2'
-    stagger_left_exception.loc[stagger_left_exception['open_tangent_L3'], 'exception type'] = 'Stagger L3'
-    stagger_left_exception.loc[stagger_left_exception['tunnel_L1'], 'exception type'] = 'Stagger L1'
-    stagger_left_exception.loc[stagger_left_exception['tunnel_L2'], 'exception type'] = 'Stagger L2'
-    stagger_left_exception.loc[stagger_left_exception['tunnel_L3'], 'exception type'] = 'Stagger L3'
+    stagger_left_exception_full.loc[stagger_left_exception_full['open_curve_L3'], 'exception type'] = 'Stagger'
+    stagger_left_exception_full.loc[stagger_left_exception_full['open_tangent_L3'], 'exception type'] = 'Stagger'
+    stagger_left_exception_full.loc[stagger_left_exception_full['tunnel_L3'], 'exception type'] = 'Stagger'
 
+    stagger_left_exception = stagger_left_exception_full\
+        .groupby(['exception type', 'open_curve_L3_id', 'open_tangent_L3_id', 'tunnel_L3_id'])\
+        .agg({'Km': ['min', 'max'], 'maxValue': ['min', 'max']})
+    stagger_left_exception.columns = stagger_left_exception.columns.map('_'.join)
     stagger_left_exception = stagger_left_exception\
-        .groupby(['exception type',
-                  'open_curve_L1_id', 'open_curve_L2_id', 'open_curve_L3_id',
-                  'open_tangent_L1_id', 'open_tangent_L2_id', 'open_tangent_L3_id',
-                  'tunnel_L1_id', 'tunnel_L2_id', 'tunnel_L3_id'])[['Km', 'maxValue']]\
-        .min()\
-        .rename({'Km': 'startKm'}, axis=1)\
-        .join(stagger_left_exception\
-            .groupby(['exception type',
-                      'open_curve_L1_id', 'open_curve_L2_id', 'open_curve_L3_id',
-                      'open_tangent_L1_id', 'open_tangent_L2_id', 'open_tangent_L3_id',
-                      'tunnel_L1_id', 'tunnel_L2_id', 'tunnel_L3_id'])[['Km']]\
-            .max()\
-            .rename({'Km': 'endKm'}, axis=1))\
         .assign(key=1)\
-        .merge(stagger_left_exception.assign(key=1), on='key')\
-        .query('`maxValue_x` == `maxValue_y` & `Km`.between(`startKm`, `endKm`)')\
-        .drop(columns=['key', 'maxValue_y', 'stagger1', 'stagger2', 'stagger3', 'stagger4',
-                       'open_curve_L1', 'open_curve_L2', 'open_curve_L3',
-                       'open_tangent_L1', 'open_tangent_L2', 'open_tangent_L3',
-                       'tunnel_L1', 'tunnel_L2', 'tunnel_L3',
-                       'open_curve_L1_id', 'open_curve_L2_id', 'open_curve_L3_id',
-                       'open_tangent_L1_id', 'open_tangent_L2_id', 'open_tangent_L3_id',
-                       'tunnel_L1_id', 'tunnel_L2_id', 'tunnel_L3_id',
-                       'open_curve_L1_count', 'open_curve_L2_count', 'open_curve_L3_count',
-                       'open_tangent_L1_count', 'open_tangent_L2_count', 'open_tangent_L3_count',
-                       'tunnel_L1_count', 'tunnel_L2_count', 'tunnel_L3_count'
+        .merge(stagger_left_exception_full.assign(key=1), on='key')\
+        .query('`maxValue_max` == `maxValue` & `Km`.between(`Km_min`, `Km_max`)')\
+        .drop(columns=['maxValue_min', 'key', 'maxValue', 'stagger1', 'stagger2', 'stagger3', 'stagger4', 'open_curve_L3',
+                       'open_tangent_L3', 'tunnel_L3', 'open_curve_L3_id', 'open_tangent_L3_id', 'tunnel_L3_id',
+                       'open_curve_L3_count', 'open_tangent_L3_count', 'tunnel_L3_count'
                        ])\
-        .rename({'Km': 'maxLocation', 'maxValue_x': 'maxValue'}, axis=1)\
+        .rename({'Km': 'maxLocation', 'Km_min': 'startKm', 'Km_max': 'endKm', 'maxValue_max': 'maxValue'}, axis=1)\
         .reset_index()\
         .drop('index', axis=1)
 
@@ -408,104 +336,74 @@ if stagger_left['open_curve_L1'].any() \
         .reset_index()\
         .drop('index', axis=1)
 
+    # ------ defining alarm level depending on maxValue only ------
+    stagger_left_exception.loc[(stagger_left_exception['maxValue'] >= open_curve_stagger_L2_min) & (
+                stagger_left_exception['maxValue'] <open_curve_stagger_L2_max) & (
+                                            stagger_left_exception['track type'] == 'Curve') & (
+                                            stagger_left_exception['location type'] != 'Tunnel'), 'level'] = 'L2'
+    stagger_left_exception.loc[(stagger_left_exception['maxValue'] >= open_curve_stagger_L1_min) & (
+                stagger_left_exception['track type'] == 'Curve') & (
+                                            stagger_left_exception['location type'] != 'Tunnel'), 'level'] = 'L1'
+    stagger_left_exception.loc[(stagger_left_exception['maxValue'] >= open_tangent_stagger_L2_min) & (
+                stagger_left_exception['maxValue'] <open_tangent_stagger_L2_max) & (
+                                            stagger_left_exception['track type'] == 'Tangent') & (
+                                            stagger_left_exception['location type'] != 'Tunnel'), 'level'] = 'L2'
+    stagger_left_exception.loc[(stagger_left_exception['maxValue'] >= open_tangent_stagger_L1_min) & (
+                stagger_left_exception['track type'] == 'Tangent') & (
+                                            stagger_left_exception['location type'] != 'Tunnel'), 'level'] = 'L1'
+    stagger_left_exception.loc[(stagger_left_exception['maxValue'] >= tunnel_curve_stagger_L2_min) & (
+                stagger_left_exception['maxValue'] <tunnel_curve_stagger_L2_max) & (
+                                            stagger_left_exception['location type'] == 'Tunnel'), 'level'] = 'L2'
+    stagger_left_exception.loc[(stagger_left_exception['maxValue'] >= tunnel_curve_stagger_L1_min) & (
+                stagger_left_exception['location type'] == 'Tunnel'), 'level'] = 'L1'
+    stagger_left_exception['level'] = stagger_left_exception['level'].fillna('L3')
+    # ------ defining alarm level depending on maxValue only ------
+
 else:
     stagger_left_exception = pd.DataFrame(columns=['exception type', 'startKm', 'endKm', 'length', 'maxValue', 'maxLocation', 'track type', 'location type'])
 # ---------- Left stagger exception ----------
 
 # ---------- Right stagger exception ----------
-stagger_right['open_curve_L1'] = ((stagger_right.maxValue <= -open_curve_stagger_L1_min) & (stagger_right['track type'] == 'Curve') & (stagger_right['location type'] != 'Tunnel'))
-stagger_right['open_curve_L2'] = ((stagger_right.maxValue <= -open_curve_stagger_L2_min) & (stagger_right.maxValue > -open_curve_stagger_L2_min) & (stagger_right['track type'] == 'Curve') & (stagger_right['location type'] != 'Tunnel'))
-stagger_right['open_curve_L3'] = ((stagger_right.maxValue <= -open_curve_stagger_L3_min) & (stagger_right.maxValue > -open_curve_stagger_L3_max) & (stagger_right['track type'] == 'Curve') & (stagger_right['location type'] != 'Tunnel'))
-stagger_right['open_tangent_L1'] = ((stagger_right.maxValue <= -open_tangent_stagger_L1_min) & (stagger_right['track type'] == 'Tangent') & (stagger_right['location type'] != 'Tunnel'))
-stagger_right['open_tangent_L2'] = ((stagger_right.maxValue <= -open_tangent_stagger_L2_min) & (stagger_right.maxValue > -open_tangent_stagger_L2_max) & (stagger_right['track type'] == 'Tangent') & (stagger_right['location type'] != 'Tunnel'))
-stagger_right['open_tangent_L3'] = ((stagger_right.maxValue <= -open_tangent_stagger_L3_min) & (stagger_right.maxValue > -open_tangent_stagger_L3_max) & (stagger_right['track type'] == 'Tangent') & (stagger_right['location type'] != 'Tunnel'))
-stagger_right['tunnel_L1'] = ((stagger_right.maxValue <= -tunnel_curve_stagger_L1_min) & (stagger_right['location type'] == 'Tunnel'))
-stagger_right['tunnel_L2'] = ((stagger_right.maxValue <= -tunnel_curve_stagger_L2_min) & (stagger_right.maxValue > -tunnel_curve_stagger_L2_max) & (stagger_right['location type'] == 'Tunnel'))
-stagger_right['tunnel_L3'] = ((stagger_right.maxValue <= -tunnel_curve_stagger_L3_min) & (stagger_right.maxValue > -tunnel_curve_stagger_L3_max) & (stagger_right['location type'] == 'Tunnel'))
-stagger_right['open_curve_L1_id'] = (stagger_right.open_curve_L1 != stagger_right.open_curve_L1.shift()).cumsum()
-stagger_right['open_curve_L2_id'] = (stagger_right.open_curve_L2 != stagger_right.open_curve_L2.shift()).cumsum()
+stagger_right['open_curve_L3'] = ((stagger_right.maxValue <= -open_curve_stagger_L3_min) & (stagger_right['track type'] == 'Curve') & (stagger_right['location type'] != 'Tunnel'))
+stagger_right['open_tangent_L3'] = ((stagger_right.maxValue <= -open_tangent_stagger_L3_min) & (stagger_right['track type'] == 'Tangent') & (stagger_right['location type'] != 'Tunnel'))
+stagger_right['tunnel_L3'] = ((stagger_right.maxValue <= -tunnel_curve_stagger_L3_min) & (stagger_right['location type'] == 'Tunnel'))
 stagger_right['open_curve_L3_id'] = (stagger_right.open_curve_L3 != stagger_right.open_curve_L3.shift()).cumsum()
-stagger_right['open_tangent_L1_id'] = (stagger_right.open_tangent_L1 != stagger_right.open_tangent_L1.shift()).cumsum()
-stagger_right['open_tangent_L2_id'] = (stagger_right.open_tangent_L2 != stagger_right.open_tangent_L2.shift()).cumsum()
 stagger_right['open_tangent_L3_id'] = (stagger_right.open_tangent_L3 != stagger_right.open_tangent_L3.shift()).cumsum()
-stagger_right['tunnel_L1_id'] = (stagger_right.tunnel_L1 != stagger_right.tunnel_L1.shift()).cumsum()
-stagger_right['tunnel_L2_id'] = (stagger_right.tunnel_L2 != stagger_right.tunnel_L2.shift()).cumsum()
 stagger_right['tunnel_L3_id'] = (stagger_right.tunnel_L3 != stagger_right.tunnel_L3.shift()).cumsum()
-stagger_right['open_curve_L1_count'] = stagger_right.groupby(['open_curve_L1', 'open_curve_L1_id']).cumcount(ascending=False) + 1
-stagger_right['open_curve_L2_count'] = stagger_right.groupby(['open_curve_L2', 'open_curve_L2_id']).cumcount(ascending=False) + 1
 stagger_right['open_curve_L3_count'] = stagger_right.groupby(['open_curve_L3', 'open_curve_L3_id']).cumcount(ascending=False) + 1
-stagger_right['open_tangent_L1_count'] = stagger_right.groupby(['open_tangent_L1', 'open_tangent_L1_id']).cumcount(ascending=False) + 1
-stagger_right['open_tangent_L2_count'] = stagger_right.groupby(['open_tangent_L2', 'open_tangent_L2_id']).cumcount(ascending=False) + 1
 stagger_right['open_tangent_L3_count'] = stagger_right.groupby(['open_tangent_L3', 'open_tangent_L3_id']).cumcount(ascending=False) + 1
-stagger_right['tunnel_L1_count'] = stagger_right.groupby(['tunnel_L1', 'tunnel_L1_id']).cumcount(ascending=False) + 1
-stagger_right['tunnel_L2_count'] = stagger_right.groupby(['tunnel_L2', 'tunnel_L2_id']).cumcount(ascending=False) + 1
 stagger_right['tunnel_L3_count'] = stagger_right.groupby(['tunnel_L3', 'tunnel_L3_id']).cumcount(ascending=False) + 1
-stagger_right.loc[~stagger_right['open_curve_L1'], 'open_curve_L1_count'] = 0
-stagger_right.loc[~stagger_right['open_curve_L2'], 'open_curve_L2_count'] = 0
 stagger_right.loc[~stagger_right['open_curve_L3'], 'open_curve_L3_count'] = 0
-stagger_right.loc[~stagger_right['open_tangent_L1'], 'open_tangent_L1_count'] = 0
-stagger_right.loc[~stagger_right['open_tangent_L2'], 'open_tangent_L2_count'] = 0
 stagger_right.loc[~stagger_right['open_tangent_L3'], 'open_tangent_L3_count'] = 0
-stagger_right.loc[~stagger_right['tunnel_L1'], 'tunnel_L1_count'] = 0
-stagger_right.loc[~stagger_right['tunnel_L2'], 'tunnel_L2_count'] = 0
 stagger_right.loc[~stagger_right['tunnel_L3'], 'tunnel_L3_count'] = 0
 
-if stagger_right['open_curve_L1'].any() \
-        or stagger_right['open_curve_L2'].any() \
-        or stagger_right['open_curve_L3'].any() \
-        or stagger_right['open_tangent_L1'].any() \
-        or stagger_right['open_tangent_L2'].any() \
+if stagger_right['open_curve_L3'].any() \
         or stagger_right['open_tangent_L3'].any() \
-        or stagger_right['tunnel_L1'].any() \
-        or stagger_right['tunnel_L2'].any() \
         or stagger_right['tunnel_L3'].any():
-    stagger_right_exception = stagger_right[(stagger_right['open_curve_L1_count'] != 0)
-                                    | (stagger_right['open_curve_L2_count'] != 0)
-                                    | (stagger_right['open_curve_L3_count'] != 0)
-                                    | (stagger_right['open_tangent_L1_count'] != 0)
-                                    | (stagger_right['open_tangent_L2_count'] != 0)
+    stagger_right_exception = stagger_right[(stagger_right['open_curve_L3_count'] != 0)
                                     | (stagger_right['open_tangent_L3_count'] != 0)
-                                    | (stagger_right['tunnel_L1_count'] != 0)
-                                    | (stagger_right['tunnel_L2_count'] != 0)
                                     | (stagger_right['tunnel_L3_count'] != 0)]
 
-    stagger_right_exception.loc[stagger_right_exception['open_curve_L1'], 'exception type'] = 'Stagger L1'
-    stagger_right_exception.loc[stagger_right_exception['open_curve_L2'], 'exception type'] = 'Stagger L2'
-    stagger_right_exception.loc[stagger_right_exception['open_curve_L3'], 'exception type'] = 'Stagger L3'
-    stagger_right_exception.loc[stagger_right_exception['open_tangent_L1'], 'exception type'] = 'Stagger L1'
-    stagger_right_exception.loc[stagger_right_exception['open_tangent_L2'], 'exception type'] = 'Stagger L2'
-    stagger_right_exception.loc[stagger_right_exception['open_tangent_L3'], 'exception type'] = 'Stagger L3'
-    stagger_right_exception.loc[stagger_right_exception['tunnel_L1'], 'exception type'] = 'Stagger L1'
-    stagger_right_exception.loc[stagger_right_exception['tunnel_L2'], 'exception type'] = 'Stagger L2'
-    stagger_right_exception.loc[stagger_right_exception['tunnel_L3'], 'exception type'] = 'Stagger L3'
+
+    stagger_right_exception.loc[stagger_right_exception['open_curve_L3'], 'exception type'] = 'Stagger'
+    stagger_right_exception.loc[stagger_right_exception['open_tangent_L3'], 'exception type'] = 'Stagger'
+    stagger_right_exception.loc[stagger_right_exception['tunnel_L3'], 'exception type'] = 'Stagger'
 
     stagger_right_exception = stagger_right_exception\
-        .groupby(['exception type',
-                  'open_curve_L1_id', 'open_curve_L2_id', 'open_curve_L3_id',
-                  'open_tangent_L1_id', 'open_tangent_L2_id', 'open_tangent_L3_id',
-                  'tunnel_L1_id', 'tunnel_L2_id', 'tunnel_L3_id'])[['Km', 'maxValue']]\
+        .groupby(['exception type', 'open_curve_L3_id', 'open_tangent_L3_id', 'tunnel_L3_id'])[['Km', 'maxValue']]\
         .min()\
         .rename({'Km': 'startKm'}, axis=1)\
         .join(stagger_right_exception\
-            .groupby(['exception type',
-                      'open_curve_L1_id', 'open_curve_L2_id', 'open_curve_L3_id',
-                      'open_tangent_L1_id', 'open_tangent_L2_id', 'open_tangent_L3_id',
-                      'tunnel_L1_id', 'tunnel_L2_id', 'tunnel_L3_id'])[['Km']]\
+            .groupby(['exception type', 'open_curve_L3_id', 'open_tangent_L3_id', 'tunnel_L3_id'])[['Km']]\
             .max()\
             .rename({'Km': 'endKm'}, axis=1))\
         .assign(key=1)\
         .merge(stagger_right_exception.assign(key=1), on='key')\
         .query('`maxValue_x` == `maxValue_y` & `Km`.between(`startKm`, `endKm`)')\
         .drop(columns=['key', 'maxValue_y', 'stagger1', 'stagger2', 'stagger3', 'stagger4',
-                       'open_curve_L1', 'open_curve_L2', 'open_curve_L3',
-                       'open_tangent_L1', 'open_tangent_L2', 'open_tangent_L3',
-                       'tunnel_L1', 'tunnel_L2', 'tunnel_L3',
-                       'open_curve_L1_id', 'open_curve_L2_id', 'open_curve_L3_id',
-                       'open_tangent_L1_id', 'open_tangent_L2_id', 'open_tangent_L3_id',
-                       'tunnel_L1_id', 'tunnel_L2_id', 'tunnel_L3_id',
-                       'open_curve_L1_count', 'open_curve_L2_count', 'open_curve_L3_count',
-                       'open_tangent_L1_count', 'open_tangent_L2_count', 'open_tangent_L3_count',
-                       'tunnel_L1_count', 'tunnel_L2_count', 'tunnel_L3_count'
+                       'open_curve_L3', 'open_tangent_L3', 'tunnel_L3', 'open_curve_L3_id',
+                       'open_tangent_L3_id', 'tunnel_L3_id', 'open_curve_L3_count',
+                       'open_tangent_L3_count', 'tunnel_L3_count'
                        ])\
         .rename({'Km': 'maxLocation', 'maxValue_x': 'maxValue'}, axis=1)\
         .reset_index()\
@@ -518,8 +416,33 @@ if stagger_right['open_curve_L1'].any() \
         .reset_index()\
         .drop('index', axis=1)
 
+    # ------ defining alarm level depends on maxValue only ------
+    stagger_right_exception.loc[(stagger_right_exception['maxValue'] <= -open_curve_stagger_L2_min) & (
+                stagger_right_exception['maxValue'] > -open_curve_stagger_L2_max) & (
+                                            stagger_right_exception['track type'] == 'Curve') & (
+                                            stagger_right_exception['location type'] != 'Tunnel'), 'level'] = 'L2'
+    stagger_right_exception.loc[(stagger_right_exception['maxValue'] <= -open_curve_stagger_L1_min) & (
+                stagger_right_exception['track type'] == 'Curve') & (
+                                            stagger_right_exception['location type'] != 'Tunnel'), 'level'] = 'L1'
+    stagger_right_exception.loc[(stagger_right_exception['maxValue'] <= -open_tangent_stagger_L2_min) & (
+                stagger_right_exception['maxValue'] > -open_tangent_stagger_L2_max) & (
+                                            stagger_right_exception['track type'] == 'Tangent') & (
+                                            stagger_right_exception['location type'] != 'Tunnel'), 'level'] = 'L2'
+    stagger_right_exception.loc[(stagger_right_exception['maxValue'] <= -open_tangent_stagger_L1_min) & (
+                stagger_right_exception['track type'] == 'Tangent') & (
+                                            stagger_right_exception['location type'] != 'Tunnel'), 'level'] = 'L1'
+    stagger_right_exception.loc[(stagger_right_exception['maxValue'] <= -tunnel_curve_stagger_L2_min) & (
+                stagger_right_exception['maxValue'] > -tunnel_curve_stagger_L2_max) & (
+                                            stagger_right_exception['location type'] == 'Tunnel'), 'level'] = 'L2'
+    stagger_right_exception.loc[(stagger_right_exception['maxValue'] <= -tunnel_curve_stagger_L1_min) & (
+                stagger_right_exception['location type'] == 'Tunnel'), 'level'] = 'L1'
+    stagger_right_exception['level'] = stagger_right_exception['level'].fillna('L3')
+    # ------ defining alarm level depends on maxValue only ------
+
 else:
     stagger_right_exception = pd.DataFrame(columns=['exception type', 'startKm', 'endKm', 'length', 'maxValue', 'maxLocation', 'track type', 'location type'])
+
+
 # ---------- Right stagger exception ----------
 print('generating exception end:', datetime.now())
 
