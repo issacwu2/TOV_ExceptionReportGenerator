@@ -5,14 +5,29 @@ import plotly.graph_objects as go
 
 # -------------- Read raw data --------------
 
-plotDF = pd.read_excel('test_plot_data_short.xlsx', sheet_name='data')
-plotDF = plotDF.set_index('chainage')
+raw = pd.read_excel('20211124_TWL_DT.xlsx', sheet_name='Data Report 1')
+raw = raw.rename({'Km': 'chainage',
+                        'StaggerWire1 [mm]': 'stagger1',
+                        'StaggerWire2 [mm]': 'stagger2',
+                        'StaggerWire3 [mm]': 'stagger3',
+                        'StaggerWire4 [mm]': 'stagger4',
+                        'WearWire1 [mm]': 'wear1',
+                        'WearWire2 [mm]': 'wear2',
+                        'WearWire3 [mm]': 'wear3',
+                        'WearWire4 [mm]': 'wear4',
+                        'HeightWire1 [mm]': 'height1',
+                        'HeightWire2 [mm]': 'height2',
+                        'HeightWire3 [mm]': 'height3',
+                        'HeightWire4 [mm]': 'height4'}, axis=1)
+
+
+plotDF = raw.set_index('chainage')
 
 # -------------- Read raw data --------------
 
-fig_stagger = px.line(plotDF[['stagger c1', 'stagger c2', 'stagger c3', 'stagger c4']])
-fig_height = px.line(plotDF[['height c1', 'height c2', 'height c3', 'height c4']])
-fig_wear = px.line(plotDF[['wear c1', 'wear c2', 'wear c3', 'wear c4']])
+fig_stagger = px.line(plotDF[['stagger1', 'stagger2', 'stagger3', 'stagger4']])
+fig_height = px.line(plotDF[['height1', 'height2', 'height3', 'height4']])
+fig_wear = px.line(plotDF[['wear1', 'wear2', 'wear3', 'wear4']])
 
 fig = sp.make_subplots(rows=3, cols=1, vertical_spacing=0.05, shared_xaxes=True,
                        subplot_titles=("Stagger", "CW Height", "CW Wearing"))
