@@ -21,7 +21,7 @@ print('4. Select ONLY the csv version of the data report to generate exception r
 print('5. Input the date of when that TOV data is obtained, in YYYY/MM/DD')
 input("Press Enter to continue...")
 print('================ IMPORTANT!!! ================')
-input('Please make sure you read through the above instructions carefully and press enter to start... ')
+input('Make sure you read through the above instructions carefully and press enter to start... ')
 
 line = input('Line: ')
 while not line in ['KTL', 'TWL', 'ISL', 'TKL', 'AEL', 'TCL', 'DRL']:
@@ -57,8 +57,6 @@ root.withdraw()
 raw_data_path = filedialog.askopenfilename()
 raw = pd.read_csv(raw_data_path)
 # ---------- allow user to select csv files -------
-
-#raw = pd.read_csv('TWL may-aug-nov data reports/20211124_TWL_DT.csv')
 
 # --------- Load metadata ----------
 track_type = pd.read_excel(line + ' metadata.xlsx', sheet_name=track + ' track type')

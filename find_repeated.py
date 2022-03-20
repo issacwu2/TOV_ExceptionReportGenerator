@@ -3,6 +3,7 @@ import time
 from datetime import datetime
 import tkinter as tk
 from tkinter import filedialog
+import os
 
 
 def clean_case(case):
@@ -64,7 +65,7 @@ while not check in ['2', '3']:
     print('Error! Make sure you only input 2 or 3')
     check = input('Compare 2 or 3 TOV exception reports? (input 2/3):')
 print('===========================================================')
-print('You are going to compare ' + check + 'TOV Exception Reports')
+print('You are going to compare ' + check + ' TOV Exception Reports')
 
 print('Select 1st Exception Report after 3 seconds...')
 for i in range(3, 0, -1):
@@ -154,12 +155,4 @@ with pd.ExcelWriter(directory + '/' + 'repeated_exception.xlsx') as writer:
         repeated_SL.to_excel(writer, sheet_name='stagger left exception', index=False)
         repeated_SR.to_excel(writer, sheet_name='stagger right exception', index=False)
 
-
-
-
-# case1_fix = case1.drop(columns=['exception type_x', 'startKm_y', 'endKm_x', 'length_x', 'length_y','key'])
-# case1_fix.loc[(case1_fix['level_x'] == 'L1') | (case1_fix['level_y'] == 'L1'), 'level'] = 'L1'
-# case1_fix['level'] = case1_fix['level'].fillna('L2')
-#
-# case1_fix = case1_fix.rename({'Unnamed: 0_y': 'id_y', 'Unnamed: 0_x': 'id_x'}, axis=1)
-# case1_fix['reference exception'] = case1_fix[['id_y', 'id_x']].values.tolist()
+os.startfile(directory + '/' + 'repeated_exception.xlsx')
