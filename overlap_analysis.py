@@ -33,22 +33,6 @@ raw = pd.read_csv(raw_data_path).rename({'Km': 'chainage',
                                                  'HeightWire4 [mm]': 'height4'}, axis=1)
 # ---------- allow user to select csv files -------
 
-# -------------- Read raw data ---------------a
-#
-# raw = pd.read_csv('backtest data/TWL_DT_backtest_data_no_alarm.csv').rename({'Km': 'chainage',
-#                                                  'StaggerWire1 [mm]': 'stagger1',
-#                                                  'StaggerWire2 [mm]': 'stagger2',
-#                                                  'StaggerWire3 [mm]': 'stagger3',
-#                                                  'StaggerWire4 [mm]': 'stagger4',
-#                                                  'WearWire1 [mm]': 'wear1',
-#                                                  'WearWire2 [mm]': 'wear2',
-#                                                  'WearWire3 [mm]': 'wear3',
-#                                                  'WearWire4 [mm]': 'wear4',
-#                                                  'HeightWire1 [mm]': 'height1',
-#                                                  'HeightWire2 [mm]': 'height2',
-#                                                  'HeightWire3 [mm]': 'height3',
-#                                                  'HeightWire4 [mm]': 'height4'}, axis=1)
-
 print('Loading.....')
 
 raw['chainage'] = raw['chainage']\
