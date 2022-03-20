@@ -1,20 +1,75 @@
 import pandas as pd
+import os
+import re
 from datetime import datetime
+import time
+import tkinter as tk
+from tkinter import filedialog
+pd.options.mode.chained_assignment = None
 
-print('read raw data and metadata start:', datetime.now())
+print('================ TOV1050 Exception Report Generator ================')
+print('Before you start, please go through the following instructions or otherwise you might experience errors and the results could be inaccurate!')
+input("Press Enter to continue...")
+print('0. Make sure all metadata.xlsx of each line are in the same folder with this script.')
+print('If not, please move them together and restart the program.')
+input("Press Enter to continue...")
+print('When the program is running, MAKE SURE YOU:')
+print('1. Input the name of Line e.g. TWL/KTL/ACL/TCL/DRL/ISL...')
+print('2. Input the direction of track, i.e. UT/DT')
+print('3. Input the chainage shift in Km as you marked on the TOV checklist after the TOV run')
+print('4. Select ONLY the csv version of the data report to generate exception report')
+print('5. Input the date of when that TOV data is obtained, in YYYY/MM/DD')
+input("Press Enter to continue...")
+print('================ IMPORTANT!!! ================')
+input('Please make sure you read through the above instructions carefully and press enter to start... ')
 
-raw = pd.read_excel('testing-rawdata.xlsx', sheet_name='AEL UT SHR-AWE')
+line = input('Line: ')
+while not line in ['KTL', 'TWL', 'ISL', 'TKL', 'AEL', 'TCL', 'DRL']:
+    print('Please make sure you input correct line:')
+    line = input('line:')
+
+if line in ['AEL', 'TCL']:
+    section = input('Please input the section range, e.g. TSY-HOK:')
+    while not re.match('^[A-Z]{3}-[A-Z]{3}', section):
+        print('Please make sure you input correct section range, e.g. TSY-HOK')
+        section = input('Please input the section range:')
+
+track = input('UT/DT? : ')
+while not track in ['DT', 'UT']:
+    print('Please make sure you input either UT / DT')
+    track = input('UT/DT? : ')
+chainage_shift = float(input('Chainage Shift? (in Km and with +/- sign) : '))
+
+d = input('Date (YYYY/MM/DD) : ')
+while not re.match('^\d{4}\/\d{2}\/\d{2}$', d):
+    print('Please make sure you in put the date in correct format [YYYY/MM/DD]')
+    d = input('Date (YYYY/MM/DD) : ')
+
+date = d.replace('/', '')
+
+print('select the data report in csv format after 3 seconds...')
+for i in range(3,0,-1):
+    print(f"{i}", end="\r", flush=True)
+    time.sleep(1)
+# ---------- allow user to select csv files -------
+root = tk.Tk()
+root.withdraw()
+raw_data_path = filedialog.askopenfilename()
+raw = pd.read_csv(raw_data_path)
+# ---------- allow user to select csv files -------
+
+#raw = pd.read_csv('TWL may-aug-nov data reports/20211124_TWL_DT.csv')
 
 # --------- Load metadata ----------
-track_type = pd.read_excel('AEL metadata.xlsx', sheet_name='DT track type')
-location_type = pd.read_excel('AEL metadata.xlsx', sheet_name='location type')
-threshold = pd.read_excel('TWL metadata.xlsx', sheet_name='threshold')
+track_type = pd.read_excel(line + ' metadata.xlsx', sheet_name=track + ' track type')
+location_type = pd.read_excel(line + ' metadata.xlsx', sheet_name='location type')
+threshold = pd.read_excel(line + ' metadata.xlsx', sheet_name='threshold')
 # --------- Load metadata ----------
-print('read raw data and metadata end:', datetime.now())
-print('set raw data accuracy to 0.001km start:', datetime.now())
 
 raw['Km'] = raw['Km']\
-    .round(decimals=3)\
+    .round(decimals=3)
+# set to chainage accuracy to 0.001km = 1m
+# shift chainage according to input
 
 raw = raw.rename({'StaggerWire1 [mm]': 'stagger1',
                   'StaggerWire2 [mm]': 'stagger2',
@@ -28,10 +83,7 @@ raw = raw.rename({'StaggerWire1 [mm]': 'stagger1',
                   'HeightWire2 [mm]': 'height2',
                   'HeightWire3 [mm]': 'height3',
                   'HeightWire4 [mm]': 'height4'}, axis=1)
-# set to chainage accuracy to 0.001km = 1m
-print('set raw data accuracy to 0.001km end:', datetime.now())
 
-print('preprocess raw data start:', datetime.now())
 # ---------- To remove unreasonable CW height data ----------
 WH_min = raw.groupby('Km')[['height1', 'height2', 'height3', 'height4']].min().reset_index()
 WH_min.loc[(WH_min['height1'] < 3500) | (WH_min['height2'] < 3500) | (WH_min['height3'] < 3500) | (WH_min['height4'] < 3500), 'error'] = WH_min['Km']
@@ -59,9 +111,8 @@ WH_cleaned_min = WH_cleaned.groupby('Km')[['height1', 'height2', 'height3', 'hei
     .min()\
     .reset_index()
 # ---------- preprocess the data before generating exception ----------
-print('preprocess raw data end:', datetime.now())
 
-print('query track and location type start:', datetime.now())
+
 # ---------- identify track type (tangent/curve) and location type (open/tunnel) ----------
 stagger_left = stagger_left \
     .assign(key=1) \
@@ -123,9 +174,8 @@ WH_cleaned_min = WH_cleaned_min \
     .drop(columns=['startKM', 'endKM', 'key']) \
     .reset_index(drop=True)
 # ---------- identify track type (tangent/curve) and location type (open/tunnel) ----------
-print('query track and location type end:', datetime.now())
 
-print('final extreme value out of 4 channels start:', datetime.now())
+
 # ---------- find extreme value amongst 4 channels ----------
 WH_cleaned_min['maxValue'] = WH_cleaned_min[['height1', 'height2', 'height3', 'height4']].min(axis=1)
 WH_cleaned_max['maxValue'] = WH_cleaned_max[['height1', 'height2', 'height3', 'height4']].max(axis=1)
@@ -135,9 +185,8 @@ wear_min['maxValue'] = wear_min[['wear1', 'wear2', 'wear3', 'wear4']].min(axis=1
 stagger_left['maxValue'] = stagger_left[['stagger1', 'stagger2', 'stagger3', 'stagger4']].max(axis=1)
 stagger_right['maxValue'] = stagger_right[['stagger1', 'stagger2', 'stagger3', 'stagger4']].min(axis=1)
 # ---------- find extreme value amongst 4 channels ----------
-print('final extreme value out of 4 channels end:', datetime.now())
 
-print('load threshold value start:', datetime.now())
+
 # ---------- load line related threshold from metadata ----------
 open_tangent_stagger_L1_min = threshold.loc[(threshold['Location Type'] == 'Open') & (threshold['Track Type'] == 'Tangent') & (threshold['Exc Type'] == 'Stagger L1')]['min'].values.item()
 open_tangent_stagger_L2_min = threshold.loc[(threshold['Location Type'] == 'Open') & (threshold['Track Type'] == 'Tangent') & (threshold['Exc Type'] == 'Stagger L2')]['min'].values.item()
@@ -175,10 +224,8 @@ low_height_L1_max = threshold.loc[threshold['Exc Type'] == 'Low Height L1']['max
 low_height_L2_min = threshold.loc[threshold['Exc Type'] == 'Low Height L2']['min'].values.item()
 low_height_L2_max = threshold.loc[threshold['Exc Type'] == 'Low Height L2']['max'].values.item()
 # ---------- load line related threshold from metadata ----------
-print('load threshold value end:', datetime.now())
 
 
-print('generating exception start:', datetime.now())
 # ---------- low height exception ----------
 WH_cleaned_min['L2'] = (WH_cleaned_min.maxValue <= low_height_L2_max)
 WH_cleaned_min['L2_id'] = (WH_cleaned_min.L2 != WH_cleaned_min.L2.shift()).cumsum()
@@ -215,11 +262,15 @@ if WH_cleaned_min['L2'].any():
     low_height_exception['level'] = low_height_exception['level'].fillna('L2')
     low_height_exception = low_height_exception[
         ['exception type', 'level', 'startKm', 'endKm', 'length', 'maxValue', 'maxLocation', 'track type',
+         'location type']].reset_index()
+    low_height_exception['id'] = date + '_' + line + '_' + track + '_' + 'LH' + low_height_exception['index'].astype(str)
+    low_height_exception = low_height_exception[
+        ['id', 'exception type', 'level', 'startKm', 'endKm', 'length', 'maxValue', 'maxLocation', 'track type',
          'location type']]
     # ------ defining alarm level depending on maxValue only ------
 
 else:
-    low_height_exception = pd.DataFrame(columns=['exception type', 'startKm', 'endKm', 'length', 'maxValue', 'maxLocation', 'track type', 'location type'])
+    low_height_exception = pd.DataFrame(columns=['id', 'exception type', 'level', 'startKm', 'endKm', 'length', 'maxValue', 'maxLocation', 'track type', 'location type'])
 # ---------- low height exception ----------
 
 # ---------- high height exception ----------
@@ -257,11 +308,15 @@ if WH_cleaned_max['L2'].any():
     high_height_exception.loc[(high_height_exception['maxValue'] >= high_height_L1_min), 'level'] = 'L1'
     high_height_exception['level'] = high_height_exception['level'].fillna('L2')
     high_height_exception = high_height_exception[['exception type', 'level', 'startKm', 'endKm', 'length', 'maxValue', 'maxLocation', 'track type',
+         'location type']].reset_index()
+    high_height_exception['id'] = date + '_' + line + '_' + track + '_' + 'HH' + high_height_exception['index'].astype(str)
+    high_height_exception = high_height_exception[
+        ['id', 'exception type', 'level', 'startKm', 'endKm', 'length', 'maxValue', 'maxLocation', 'track type',
          'location type']]
     # ------ defining alarm level depending on maxValue only ------
 
 else:
-    high_height_exception = pd.DataFrame(columns=['exception type', 'level', 'startKm', 'endKm', 'length', 'maxValue', 'maxLocation', 'track type', 'location type'])
+    high_height_exception = pd.DataFrame(columns=['id', 'exception type', 'level', 'startKm', 'endKm', 'length', 'maxValue', 'maxLocation', 'track type', 'location type'])
 # ---------- high height exception ----------
 
 # ---------- Wire Wear exception ----------
@@ -300,11 +355,15 @@ if wear_min['L2'].any():
     wear_exception.loc[(wear_exception['maxValue'] <= wear_L1_max), 'level'] = 'L1'
     wear_exception['level'] = wear_exception['level'].fillna('L2')
     wear_exception = wear_exception[['exception type', 'level', 'startKm', 'endKm', 'length', 'maxValue', 'maxLocation', 'track type',
+         'location type']].reset_index()
+    wear_exception['id'] = date + '_' + line + '_' + track + '_' + 'W' + wear_exception['index'].astype(str)
+    wear_exception = wear_exception[
+        ['id', 'exception type', 'level', 'startKm', 'endKm', 'length', 'maxValue', 'maxLocation', 'track type',
          'location type']]
     # ------ defining alarm level depending on maxValue only ------
 
 else:
-    wear_exception = pd.DataFrame(columns=['exception type', 'level', 'startKm', 'endKm', 'length', 'maxValue', 'maxLocation', 'track type', 'location type'])
+    wear_exception = pd.DataFrame(columns=['id', 'exception type', 'level', 'startKm', 'endKm', 'length', 'maxValue', 'maxLocation', 'track type', 'location type'])
 # ---------- Wire Wear exception ----------
 
 # ---------- Left stagger exception ----------
@@ -379,11 +438,15 @@ if stagger_left['open_curve_L3'].any() \
     stagger_left_exception['level'] = stagger_left_exception['level'].fillna('L3')
     stagger_left_exception = stagger_left_exception[
         ['exception type', 'level', 'startKm', 'endKm', 'length', 'maxValue', 'maxLocation', 'track type',
+         'location type']].reset_index()
+    stagger_left_exception['id'] = date + '_' + line + '_' + track + '_' + 'SL' + stagger_left_exception['index'].astype(str)
+    stagger_left_exception = stagger_left_exception[
+        ['id', 'exception type', 'level', 'startKm', 'endKm', 'length', 'maxValue', 'maxLocation', 'track type',
          'location type']]
     # ------ defining alarm level depending on maxValue only ------
 
 else:
-    stagger_left_exception = pd.DataFrame(columns=['exception type', 'level', 'startKm', 'endKm', 'length', 'maxValue', 'maxLocation', 'track type', 'location type'])
+    stagger_left_exception = pd.DataFrame(columns=['id', 'exception type', 'level', 'startKm', 'endKm', 'length', 'maxValue', 'maxLocation', 'track type', 'location type'])
 # ---------- Left stagger exception ----------
 
 # ---------- Right stagger exception ----------
@@ -459,21 +522,31 @@ if stagger_right['open_curve_L3'].any() \
                 stagger_right_exception['location type'] == 'Tunnel'), 'level'] = 'L1'
     stagger_right_exception['level'] = stagger_right_exception['level'].fillna('L3')
     stagger_right_exception = stagger_right_exception[
-        ['exception type', 'level', 'startKm', 'endKm', 'length', 'maxValue', 'maxLocation', 'track type', 'location type']]
+        ['exception type', 'level', 'startKm', 'endKm', 'length',
+         'maxValue', 'maxLocation', 'track type', 'location type']].reset_index()
+    stagger_right_exception['id'] = date + '_' + line + '_' + track + '_' + 'SL' + stagger_right_exception['index'].astype(str)
+    stagger_right_exception = stagger_right_exception[
+        ['id', 'exception type', 'level', 'startKm', 'endKm', 'length', 'maxValue', 'maxLocation', 'track type',
+         'location type']]
     # ------ defining alarm level depends on maxValue only ------
 
 else:
-    stagger_right_exception = pd.DataFrame(columns=['exception type', 'level', 'startKm', 'endKm', 'length', 'maxValue', 'maxLocation', 'track type', 'location type'])
-
-
+    stagger_right_exception = pd.DataFrame(columns=['id', 'exception type', 'level', 'startKm', 'endKm', 'length', 'maxValue', 'maxLocation', 'track type', 'location type'])
 # ---------- Right stagger exception ----------
-print('generating exception end:', datetime.now())
 
 # ---------- output results ----------
-with pd.ExcelWriter('AEL-UT-SHR-AWE.xlsx') as writer:
-    wear_exception.to_excel(writer, sheet_name='wear exception')
-    low_height_exception.to_excel(writer, sheet_name='low height exception')
-    high_height_exception.to_excel(writer, sheet_name='high height exception')
-    stagger_left_exception.to_excel(writer, sheet_name='stagger left exception')
-    stagger_right_exception.to_excel(writer, sheet_name='stagger right exception')
+print('Saving as Excel at', datetime.now())
+print('Done!')
+input('Press Enter to select save location')
+directory = filedialog.askdirectory()
+if line in ['AEL', 'TCL']:
+    line = line + '_' + section.replace('-', '_')
+with pd.ExcelWriter(directory + '/' + date + '_' + line + '_' + track + '_' + 'Exception Report.xlsx') as writer:
+    wear_exception.to_excel(writer, sheet_name='wear exception', index=False)
+    low_height_exception.to_excel(writer, sheet_name='low height exception', index=False)
+    high_height_exception.to_excel(writer, sheet_name='high height exception', index=False)
+    stagger_left_exception.to_excel(writer, sheet_name='stagger left exception', index=False)
+    stagger_right_exception.to_excel(writer, sheet_name='stagger right exception', index=False)
 # ---------- output results ----------
+
+os.startfile(directory + '/' + date + '_' + line + '_' + track + '_' + 'Exception Report.xlsx')

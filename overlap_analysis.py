@@ -2,10 +2,23 @@ import pandas as pd
 import plotly.express as px
 import plotly.subplots as sp
 import plotly.graph_objects as go
+import time
+import tkinter as tk
+from tkinter import filedialog
+pd.options.mode.chained_assignment = None
 
-# -------------- Read raw data --------------
 
-raw = pd.read_csv('20211124_TWL_DT.csv').rename({'Km': 'chainage',
+print('================ Overlap Analysis Tool ================')
+print('This is a tool to visualize the TOV raw data')
+print('select the data report in csv format after 3 seconds...')
+for i in range(3,0,-1):
+    print(f"{i}", end="\r", flush=True)
+    time.sleep(1)
+# ---------- allow user to select csv files -------
+root = tk.Tk()
+root.withdraw()
+raw_data_path = filedialog.askopenfilename()
+raw = pd.read_csv(raw_data_path).rename({'Km': 'chainage',
                                                  'StaggerWire1 [mm]': 'stagger1',
                                                  'StaggerWire2 [mm]': 'stagger2',
                                                  'StaggerWire3 [mm]': 'stagger3',
@@ -18,6 +31,23 @@ raw = pd.read_csv('20211124_TWL_DT.csv').rename({'Km': 'chainage',
                                                  'HeightWire2 [mm]': 'height2',
                                                  'HeightWire3 [mm]': 'height3',
                                                  'HeightWire4 [mm]': 'height4'}, axis=1)
+# ---------- allow user to select csv files -------
+
+# -------------- Read raw data ---------------a
+#
+# raw = pd.read_csv('backtest data/TWL_DT_backtest_data_no_alarm.csv').rename({'Km': 'chainage',
+#                                                  'StaggerWire1 [mm]': 'stagger1',
+#                                                  'StaggerWire2 [mm]': 'stagger2',
+#                                                  'StaggerWire3 [mm]': 'stagger3',
+#                                                  'StaggerWire4 [mm]': 'stagger4',
+#                                                  'WearWire1 [mm]': 'wear1',
+#                                                  'WearWire2 [mm]': 'wear2',
+#                                                  'WearWire3 [mm]': 'wear3',
+#                                                  'WearWire4 [mm]': 'wear4',
+#                                                  'HeightWire1 [mm]': 'height1',
+#                                                  'HeightWire2 [mm]': 'height2',
+#                                                  'HeightWire3 [mm]': 'height3',
+#                                                  'HeightWire4 [mm]': 'height4'}, axis=1)
 
 raw['chainage'] = raw['chainage']\
     .round(decimals=3)
