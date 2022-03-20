@@ -99,10 +99,13 @@ for d in fig_height.data:
 for d in fig_wear.data:
     fig.add_trace((go.Scattergl(x=d['x'], y=d['y'], name=d['name'])), row=3, col=1)
 
+
+title = raw_data_path.split('/')[-1].split('.')[0]
+
 fig.update_layout(xaxis3_rangeslider_visible=True,
                   xaxis3_rangeslider_thickness=0.05,
                   hovermode="x unified",
-                  title="TOV data Visualizer")
+                  title="TOV data Visualizer" + ' - ' + title)
 # ---------- creating stacked chart ----------
 
 fig.show()
