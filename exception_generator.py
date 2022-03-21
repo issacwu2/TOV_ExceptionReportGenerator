@@ -55,7 +55,7 @@ for i in range(3,0,-1):
 root = tk.Tk()
 root.withdraw()
 raw_data_path = filedialog.askopenfilename()
-raw = pd.read_csv(raw_data_path)
+raw = pd.read_csv(raw_data_path, low_memory=False)
 # ---------- allow user to select csv files -------
 
 # --------- Load metadata ----------
@@ -65,7 +65,7 @@ threshold = pd.read_excel(line + ' metadata.xlsx', sheet_name='threshold')
 # --------- Load metadata ----------
 
 raw['Km'] = raw['Km']\
-    .round(decimals=3)
+    .round(decimals=3) + chainage_shift
 # set to chainage accuracy to 0.001km = 1m
 # shift chainage according to input
 
@@ -81,6 +81,19 @@ raw = raw.rename({'StaggerWire1 [mm]': 'stagger1',
                   'HeightWire2 [mm]': 'height2',
                   'HeightWire3 [mm]': 'height3',
                   'HeightWire4 [mm]': 'height4'}, axis=1)
+
+
+# ---------- To remove non-float data in float columns ----------
+for column in raw[
+	['height1', 'height2', 'height3', 'height4', 'wear1', 'wear2', 'wear3', 'wear4', 'stagger1', 'stagger2', 'stagger3',
+	 'stagger4']].select_dtypes(include=[object]).columns:
+	raw = raw[~raw[column].str.contains('[!@#$%^&*()a-zA-Z!@#$%^&*()]+$', na=False)]
+
+raw[['height1', 'height2', 'height3', 'height4', 'wear1', 'wear2', 'wear3', 'wear4', 'stagger1', 'stagger2', 'stagger3',
+	 'stagger4']] = raw[['height1', 'height2', 'height3', 'height4', 'wear1', 'wear2', 'wear3', 'wear4', 'stagger1', 'stagger2', 'stagger3',
+	 'stagger4']].apply(pd.to_numeric)
+# ---------- To remove non-float data in float columns ----------
+
 
 # ---------- To remove unreasonable CW height data ----------
 WH_min = raw.groupby('Km')[['height1', 'height2', 'height3', 'height4']].min().reset_index()

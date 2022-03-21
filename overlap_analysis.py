@@ -18,7 +18,7 @@ for i in range(3,0,-1):
 root = tk.Tk()
 root.withdraw()
 raw_data_path = filedialog.askopenfilename()
-raw = pd.read_csv(raw_data_path).rename({'Km': 'chainage',
+raw = pd.read_csv(raw_data_path, low_memory=False).rename({'Km': 'chainage',
                                                  'StaggerWire1 [mm]': 'stagger1',
                                                  'StaggerWire2 [mm]': 'stagger2',
                                                  'StaggerWire3 [mm]': 'stagger3',
@@ -37,6 +37,17 @@ print('Loading.....')
 
 raw['chainage'] = raw['chainage']\
     .round(decimals=3)
+
+# ---------- To remove non-float data in float columns ----------
+for column in raw[
+	['height1', 'height2', 'height3', 'height4', 'wear1', 'wear2', 'wear3', 'wear4', 'stagger1', 'stagger2', 'stagger3',
+	 'stagger4']].select_dtypes(include=[object]).columns:
+	raw = raw[~raw[column].str.contains('[!@#$%^&*()a-zA-Z!@#$%^&*()]+$', na=False)]
+
+raw[['height1', 'height2', 'height3', 'height4', 'wear1', 'wear2', 'wear3', 'wear4', 'stagger1', 'stagger2', 'stagger3',
+	 'stagger4']] = raw[['height1', 'height2', 'height3', 'height4', 'wear1', 'wear2', 'wear3', 'wear4', 'stagger1', 'stagger2', 'stagger3',
+	 'stagger4']].apply(pd.to_numeric)
+# ---------- To remove non-float data in float columns ----------
 
 # ---------- getting extreme stagger value by absolute max (regardless of +/- sign) ----------
 stagger_condensed = raw.groupby(raw.chainage)['stagger1', 'stagger2', 'stagger3', 'stagger4']\
