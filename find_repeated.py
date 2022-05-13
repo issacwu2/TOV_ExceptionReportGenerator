@@ -35,25 +35,25 @@ def find_repeated(df1, df2):
         case1 = merged.query('(`startKm_x`.between(`startKm_y`, `endKm_y`)) & '
                            '(`endKm_x` > `endKm_y`) &'
                            '(`maxLocation_x`.between(`startKm_x`, `endKm_y`)) &'
-                           '(`maxLocation_y`.between(`startKm_x`, `endKm_y`))')
+                           '(`maxLocation_y`.between(`startKm_x`, `endKm_y`))', engine='python')
 
         # ---------- case2 = 1st exception at front, 2nd behind ----------
         case2 = merged.query('(`startKm_y`.between(`startKm_x`, `endKm_x`)) & '
                            '(`endKm_x` < `endKm_y`) &'
                            '(`maxLocation_x`.between(`startKm_y`, `endKm_x`)) &'
-                           '(`maxLocation_y`.between(`startKm_y`, `endKm_x`))')
+                           '(`maxLocation_y`.between(`startKm_y`, `endKm_x`))', engine='python')
 
         # ---------- case3 = 2nd exception covering whole 1st  ----------
         case3 = merged.query('(`startKm_x` >= `startKm_y`) & '
                            '(`endKm_x` <= `endKm_y`) & '
                            '(`maxLocation_x`.between(`startKm_x`, `endKm_x`)) &'
-                           '(`maxLocation_y`.between(`startKm_x`, `endKm_x`))')
+                           '(`maxLocation_y`.between(`startKm_x`, `endKm_x`))', engine='python')
 
         # ---------- case4 = 1st exception covering whole 2nd  ----------
         case4 = merged.query('(`startKm_x` <= `startKm_y`) & '
                            '(`endKm_x` >= `endKm_y`) & '
                            '(`maxLocation_x`.between(`startKm_y`, `endKm_y`)) &'
-                           '(`maxLocation_y`.between(`startKm_y`, `endKm_y`))')
+                           '(`maxLocation_y`.between(`startKm_y`, `endKm_y`))', engine='python')
         return pd.concat([clean_case(case1), clean_case(case2), clean_case(case3), clean_case(case4)])\
             .reset_index().drop('index', axis=1)
 

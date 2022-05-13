@@ -130,60 +130,60 @@ WH_cleaned_min = WH_cleaned.groupby('Km')[['height1', 'height2', 'height3', 'hei
 stagger_left = stagger_left \
     .assign(key=1) \
     .merge(track_type.assign(key=1), on='key') \
-    .query('`Km`.between(`startKM`, `endKM`)') \
+    .query('`Km`.between(`startKM`, `endKM`)', engine='python') \
     .drop(columns=['startKM', 'endKM', 'key']) \
     .reset_index(drop=True) \
     .assign(key=1) \
     .merge(location_type.assign(key=1), on='key') \
-    .query('`Km`.between(`startKM`, `endKM`)') \
+    .query('`Km`.between(`startKM`, `endKM`)', engine='python') \
     .drop(columns=['startKM', 'endKM', 'key']) \
     .reset_index(drop=True)
 
 stagger_right = stagger_right \
     .assign(key=1) \
     .merge(track_type.assign(key=1), on='key') \
-    .query('`Km`.between(`startKM`, `endKM`)') \
+    .query('`Km`.between(`startKM`, `endKM`)', engine='python') \
     .drop(columns=['startKM', 'endKM', 'key']) \
     .reset_index(drop=True) \
     .assign(key=1) \
     .merge(location_type.assign(key=1), on='key') \
-    .query('`Km`.between(`startKM`, `endKM`)') \
+    .query('`Km`.between(`startKM`, `endKM`)', engine='python') \
     .drop(columns=['startKM', 'endKM', 'key']) \
     .reset_index(drop=True)
 
 wear_min = wear_min \
     .assign(key=1) \
     .merge(track_type.assign(key=1), on='key') \
-    .query('`Km`.between(`startKM`, `endKM`)') \
+    .query('`Km`.between(`startKM`, `endKM`)', engine='python') \
     .drop(columns=['startKM', 'endKM', 'key']) \
     .reset_index(drop=True) \
     .assign(key=1) \
     .merge(location_type.assign(key=1), on='key') \
-    .query('`Km`.between(`startKM`, `endKM`)') \
+    .query('`Km`.between(`startKM`, `endKM`)', engine='python') \
     .drop(columns=['startKM', 'endKM', 'key']) \
     .reset_index(drop=True)
 
 WH_cleaned_max = WH_cleaned_max \
     .assign(key=1) \
     .merge(track_type.assign(key=1), on='key') \
-    .query('`Km`.between(`startKM`, `endKM`)') \
+    .query('`Km`.between(`startKM`, `endKM`)', engine='python') \
     .drop(columns=['startKM', 'endKM', 'key']) \
     .reset_index(drop=True) \
     .assign(key=1) \
     .merge(location_type.assign(key=1), on='key') \
-    .query('`Km`.between(`startKM`, `endKM`)') \
+    .query('`Km`.between(`startKM`, `endKM`)', engine='python') \
     .drop(columns=['startKM', 'endKM', 'key']) \
     .reset_index(drop=True)
 
 WH_cleaned_min = WH_cleaned_min \
     .assign(key=1) \
     .merge(track_type.assign(key=1), on='key') \
-    .query('`Km`.between(`startKM`, `endKM`)') \
+    .query('`Km`.between(`startKM`, `endKM`)', engine='python') \
     .drop(columns=['startKM', 'endKM', 'key']) \
     .reset_index(drop=True) \
     .assign(key=1) \
     .merge(location_type.assign(key=1), on='key') \
-    .query('`Km`.between(`startKM`, `endKM`)') \
+    .query('`Km`.between(`startKM`, `endKM`)', engine='python') \
     .drop(columns=['startKM', 'endKM', 'key']) \
     .reset_index(drop=True)
 # ---------- identify track type (tangent/curve) and location type (open/tunnel) ----------
@@ -255,7 +255,7 @@ if WH_cleaned_min['L2'].any():
     low_height_exception = low_height_exception\
         .assign(key=1)\
         .merge(low_height_exception_full.assign(key=1), on='key')\
-        .query('`maxValue_min` == `maxValue` & `Km`.between(`Km_min`, `Km_max`)')\
+        .query('`maxValue_min` == `maxValue` & `Km`.between(`Km_min`, `Km_max`)', engine='python')\
         .drop(columns=['maxValue_max', 'key', 'maxValue', 'L2_id', 'L2_count', 'height1',
                        'height2', 'height3', 'height4', 'L2'])\
         .rename({'Km': 'maxLocation', 'Km_min': 'startKm', 'Km_max': 'endKm',
@@ -302,7 +302,7 @@ if WH_cleaned_max['L2'].any():
     high_height_exception = high_height_exception\
         .assign(key=1)\
         .merge(high_height_exception_full.assign(key=1), on='key')\
-        .query('`maxValue_max` == `maxValue` & `Km`.between(`Km_min`, `Km_max`)')\
+        .query('`maxValue_max` == `maxValue` & `Km`.between(`Km_min`, `Km_max`)', engine='python')\
         .drop(columns=['maxValue_min', 'key', 'maxValue', 'L2_id', 'L2_count', 'height1',
                        'height2', 'height3', 'height4', 'L2'])\
         .rename({'Km': 'maxLocation', 'Km_min': 'startKm', 'Km_max': 'endKm',
@@ -349,7 +349,7 @@ if wear_min['L2'].any():
     wear_exception = wear_exception\
         .assign(key=1)\
         .merge(wear_exception_full.assign(key=1), on='key')\
-        .query('`maxValue_min` == `maxValue` & `Km`.between(`Km_min`, `Km_max`)')\
+        .query('`maxValue_min` == `maxValue` & `Km`.between(`Km_min`, `Km_max`)', engine='python')\
         .drop(columns=['maxValue_max', 'key', 'maxValue', 'L2_id', 'L2_count',
                        'wear1', 'wear2', 'wear3', 'wear4', 'L2'])\
         .rename({'Km': 'maxLocation', 'Km_min': 'startKm', 'Km_max': 'endKm',
@@ -412,7 +412,7 @@ if stagger_left['open_curve_L3'].any() \
     stagger_left_exception = stagger_left_exception\
         .assign(key=1)\
         .merge(stagger_left_exception_full.assign(key=1), on='key')\
-        .query('`maxValue_max` == `maxValue` & `Km`.between(`Km_min`, `Km_max`)')\
+        .query('`maxValue_max` == `maxValue` & `Km`.between(`Km_min`, `Km_max`)', engine='python')\
         .drop(columns=['maxValue_min', 'key', 'maxValue', 'stagger1', 'stagger2', 'stagger3', 'stagger4', 'open_curve_L3',
                        'open_tangent_L3', 'tunnel_L3', 'open_curve_L3_id', 'open_tangent_L3_id', 'tunnel_L3_id',
                        'open_curve_L3_count', 'open_tangent_L3_count', 'tunnel_L3_count'
@@ -496,7 +496,7 @@ if stagger_right['open_curve_L3'].any() \
     stagger_right_exception = stagger_right_exception\
         .assign(key=1)\
         .merge(stagger_right_exception_full.assign(key=1), on='key')\
-        .query('`maxValue_max` == `maxValue` & `Km`.between(`Km_min`, `Km_max`)')\
+        .query('`maxValue_max` == `maxValue` & `Km`.between(`Km_min`, `Km_max`)', engine='python')\
         .drop(columns=['maxValue_min', 'key', 'maxValue', 'stagger1', 'stagger2', 'stagger3', 'stagger4',
                        'open_curve_L3', 'open_tangent_L3', 'tunnel_L3', 'open_curve_L3_id',
                        'open_tangent_L3_id', 'tunnel_L3_id', 'open_curve_L3_count',
