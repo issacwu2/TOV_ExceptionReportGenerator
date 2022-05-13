@@ -76,6 +76,7 @@ for i in range(3, 0, -1):
 root = tk.Tk()
 root.withdraw()
 df1_path = filedialog.askopenfilename()
+print('Selected: ' + os.path.basename(df1_path))
 df1_W = pd.read_excel(df1_path, sheet_name='wear exception')
 df1_LH = pd.read_excel(df1_path, sheet_name='low height exception')
 df1_HH = pd.read_excel(df1_path, sheet_name='high height exception')
@@ -89,6 +90,7 @@ for i in range(3, 0, -1):
     print(f"{i}", end="\r", flush=True)
     time.sleep(1)
 df2_path = filedialog.askopenfilename()
+print('Selected: ' + os.path.basename(df2_path))
 df2_W = pd.read_excel(df2_path, sheet_name='wear exception')
 df2_LH = pd.read_excel(df2_path, sheet_name='low height exception')
 df2_HH = pd.read_excel(df2_path, sheet_name='high height exception')
@@ -105,6 +107,7 @@ if check == '3':
         print(f"{i}", end="\r", flush=True)
         time.sleep(1)
     df3_path = filedialog.askopenfilename()
+    print('Selected: ' + os.path.basename(df3_path))
     df3_W = pd.read_excel(df3_path, sheet_name='wear exception')
     df3_LH = pd.read_excel(df3_path, sheet_name='low height exception')
     df3_HH = pd.read_excel(df3_path, sheet_name='high height exception')
@@ -141,18 +144,23 @@ print('Saving as Excel at', datetime.now())
 print('Done!')
 input('Press Enter to select save location')
 directory = filedialog.askdirectory()
-with pd.ExcelWriter(directory + '/' + 'repeated_exception.xlsx') as writer:
-    if check == '3':
-        triple_repeated_W.to_excel(writer, sheet_name='wear exception', index=False)
-        triple_repeated_LH.to_excel(writer, sheet_name='low height exception', index=False)
-        triple_repeated_HH.to_excel(writer, sheet_name='high height exception', index=False)
-        triple_repeated_SL.to_excel(writer, sheet_name='stagger left exception', index=False)
-        triple_repeated_SR.to_excel(writer, sheet_name='stagger right exception', index=False)
-    else:
-        repeated_W.to_excel(writer, sheet_name='wear exception', index=False)
-        repeated_LH.to_excel(writer, sheet_name='low height exception', index=False)
-        repeated_HH.to_excel(writer, sheet_name='high height exception', index=False)
-        repeated_SL.to_excel(writer, sheet_name='stagger left exception', index=False)
-        repeated_SR.to_excel(writer, sheet_name='stagger right exception', index=False)
+if check == '2':
+    final_path = directory + '/' + os.path.basename(os.path.splitext(df2_path)[0]) + '_repeated.xlsx'
+elif check == '3':
+    final_path = directory + '/' + os.path.basename(os.path.splitext(df3_path)[0]) + '_triple_repeated.xlsx'
 
-os.startfile(directory + '/' + 'repeated_exception.xlsx')
+with pd.ExcelWriter(final_path) as writer:
+    if check == '3':
+        triple_repeated_W.sort_values('startKm').to_excel(writer, sheet_name='wear exception', index=False)
+        triple_repeated_LH.sort_values('startKm').to_excel(writer, sheet_name='low height exception', index=False)
+        triple_repeated_HH.sort_values('startKm').to_excel(writer, sheet_name='high height exception', index=False)
+        triple_repeated_SL.sort_values('startKm').to_excel(writer, sheet_name='stagger left exception', index=False)
+        triple_repeated_SR.sort_values('startKm').to_excel(writer, sheet_name='stagger right exception', index=False)
+    else:
+        repeated_W.sort_values('startKm').to_excel(writer, sheet_name='wear exception', index=False)
+        repeated_LH.sort_values('startKm').to_excel(writer, sheet_name='low height exception', index=False)
+        repeated_HH.sort_values('startKm').to_excel(writer, sheet_name='high height exception', index=False)
+        repeated_SL.sort_values('startKm').to_excel(writer, sheet_name='stagger left exception', index=False)
+        repeated_SR.sort_values('startKm').to_excel(writer, sheet_name='stagger right exception', index=False)
+
+os.startfile(final_path)

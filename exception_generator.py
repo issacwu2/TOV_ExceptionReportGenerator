@@ -14,13 +14,13 @@ print('0. Make sure all metadata.xlsx of each line are in the same folder with t
 print('If not, please move them together and restart the program.')
 input("Press Enter to continue...")
 print('When the program is running, MAKE SURE YOU:')
-print('1. Input the name of Line e.g. TWL/KTL/ACL/TCL/DRL/ISL...')
+print('1. Input the name of Line e.g. TWL/KTL/AEL/TCL/DRL/ISL...')
 print('2. Input the direction of track, i.e. UT/DT')
 print('3. Input the chainage shift in Km as you marked on the TOV checklist after the TOV run')
 print('4. Select ONLY the csv version of the data report to generate exception report')
 print('5. Input the date of when that TOV data is obtained, in YYYY/MM/DD')
 input("Press Enter to continue...")
-print('================ IMPORTANT!!! ================')
+print('=========================== IMPORTANT!!! ===========================')
 input('Make sure you read through the above instructions carefully and press enter to start... ')
 
 line = input('Line: ')
@@ -56,6 +56,7 @@ root = tk.Tk()
 root.withdraw()
 raw_data_path = filedialog.askopenfilename()
 raw = pd.read_csv(raw_data_path, low_memory=False)
+print('Selected: ' + os.path.basename(raw_data_path))
 # ---------- allow user to select csv files -------
 
 # --------- Load metadata ----------
@@ -63,6 +64,7 @@ track_type = pd.read_excel(line + ' metadata.xlsx', sheet_name=track + ' track t
 location_type = pd.read_excel(line + ' metadata.xlsx', sheet_name='location type')
 threshold = pd.read_excel(line + ' metadata.xlsx', sheet_name='threshold')
 # --------- Load metadata ----------
+print('Loading...')
 
 raw['Km'] = raw['Km']\
     .round(decimals=3) + chainage_shift

@@ -33,7 +33,7 @@ raw = pd.read_csv(raw_data_path, low_memory=False).rename({'Km': 'chainage',
                                                  'HeightWire4 [mm]': 'height4'}, axis=1)
 # ---------- allow user to select csv files -------
 
-print('Loading.....')
+print('Loading...')
 
 raw['chainage'] = raw['chainage']\
     .round(decimals=3)
