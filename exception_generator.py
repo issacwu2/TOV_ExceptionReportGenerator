@@ -55,7 +55,7 @@ for i in range(3,0,-1):
 root = tk.Tk()
 root.withdraw()
 raw_data_path = filedialog.askopenfilename()
-raw = pd.read_csv(raw_data_path, low_memory=False)
+raw = pd.read_csv(raw_data_path, low_memory=False, encoding='cp1252')
 print('Selected: ' + os.path.basename(raw_data_path))
 # ---------- allow user to select csv files -------
 
@@ -70,6 +70,10 @@ raw['Km'] = raw['Km']\
     .round(decimals=3) + chainage_shift
 # set to chainage accuracy to 0.001km = 1m
 # shift chainage according to input
+
+raw = raw[['Km', 'HeightWire1 [mm]', 'HeightWire2 [mm]', 'HeightWire3 [mm]', 'HeightWire4 [mm]',
+           'StaggerWire1 [mm]', 'StaggerWire2 [mm]', 'StaggerWire3 [mm]', 'StaggerWire4 [mm]',
+           'WearWire1 [mm]', 'WearWire2 [mm]', 'WearWire3 [mm]', 'WearWire4 [mm]']]
 
 raw = raw.rename({'StaggerWire1 [mm]': 'stagger1',
                   'StaggerWire2 [mm]': 'stagger2',
@@ -86,10 +90,12 @@ raw = raw.rename({'StaggerWire1 [mm]': 'stagger1',
 
 
 # ---------- To remove non-float data in float columns ----------
-for column in raw[
-	['height1', 'height2', 'height3', 'height4', 'wear1', 'wear2', 'wear3', 'wear4', 'stagger1', 'stagger2', 'stagger3',
-	 'stagger4']].select_dtypes(include=[object]).columns:
-	raw = raw[~raw[column].str.contains('[!@#$%^&*()a-zA-Z!@#$%^&*()]+$', na=False)]
+# for column in raw[
+# 	['height1', 'height2', 'height3', 'height4', 'wear1', 'wear2', 'wear3', 'wear4', 'stagger1', 'stagger2', 'stagger3',
+# 	 'stagger4']].select_dtypes(include=[object]).columns:
+# 	raw = raw[~raw[column].str.contains('[!@#$%^&*()a-zA-Z!@#$%^&*()]+$', na=False)]
+
+raw = raw.replace('1.#IO', '')
 
 raw[['height1', 'height2', 'height3', 'height4', 'wear1', 'wear2', 'wear3', 'wear4', 'stagger1', 'stagger2', 'stagger3',
 	 'stagger4']] = raw[['height1', 'height2', 'height3', 'height4', 'wear1', 'wear2', 'wear3', 'wear4', 'stagger1', 'stagger2', 'stagger3',
