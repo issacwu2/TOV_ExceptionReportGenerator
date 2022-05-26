@@ -34,7 +34,7 @@ if line in ['AEL', 'TCL']:
         print('Please make sure you input correct section range, e.g. TSY-HOK')
         section = input('Please input the section range:')
 
-if line is 'DRL':
+if line == 'DRL':
     track = input('UT/PL? : ')
     while not track in ['PL', 'UT']:
         print('Please make sure you input either UT / PL')
