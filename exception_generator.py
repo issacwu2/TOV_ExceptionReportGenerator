@@ -34,10 +34,17 @@ if line in ['AEL', 'TCL']:
         print('Please make sure you input correct section range, e.g. TSY-HOK')
         section = input('Please input the section range:')
 
-track = input('UT/DT? : ')
-while not track in ['DT', 'UT']:
-    print('Please make sure you input either UT / DT')
+if line is 'DRL':
+    track = input('UT/PL? : ')
+    while not track in ['PL', 'UT']:
+        print('Please make sure you input either UT / PL')
+        track = input('UT/PL? : ')
+else:
     track = input('UT/DT? : ')
+    while not track in ['DT', 'UT']:
+        print('Please make sure you input either UT / DT')
+        track = input('UT/DT? : ')
+
 chainage_shift = float(input('Chainage Shift? (in Km and with +/- sign) : '))
 
 d = input('Date (YYYY/MM/DD) : ')

@@ -55,6 +55,7 @@ def find_repeated(df1, df2):
                            '(`maxLocation_x`.between(`startKm_y`, `endKm_y`)) &'
                            '(`maxLocation_y`.between(`startKm_y`, `endKm_y`))', engine='python')
         return pd.concat([clean_case(case1), clean_case(case2), clean_case(case3), clean_case(case4)])\
+            .drop_duplicates()\
             .reset_index().drop('index', axis=1)
 
 
