@@ -47,6 +47,8 @@ else:
 
 chainage_shift = float(input('Chainage Shift? (in Km and with +/- sign) : '))
 
+chainage_shift_df = pd.DataFrame(data={'chainage shift': [chainage_shift]})
+
 d = input('Date (YYYY/MM/DD) : ')
 while not re.match('^\d{4}\/\d{2}\/\d{2}$', d):
     print('Please make sure you in put the date in correct format [YYYY/MM/DD]')
@@ -74,9 +76,9 @@ threshold = pd.read_excel(line + ' metadata.xlsx', sheet_name='threshold')
 print('Loading...')
 
 raw['Km'] = raw['Km']\
-    .round(decimals=3) + chainage_shift
+    .round(decimals=3)
 # set to chainage accuracy to 0.001km = 1m
-# shift chainage according to input
+
 
 raw = raw[['Km', 'HeightWire1 [mm]', 'HeightWire2 [mm]', 'HeightWire3 [mm]', 'HeightWire4 [mm]',
            'StaggerWire1 [mm]', 'StaggerWire2 [mm]', 'StaggerWire3 [mm]', 'StaggerWire4 [mm]',
@@ -568,6 +570,7 @@ directory = filedialog.askdirectory()
 if line in ['AEL', 'TCL']:
     line = line + '_' + section.replace('-', '_')
 with pd.ExcelWriter(directory + '/' + date + '_' + line + '_' + track + '_' + 'Exception Report.xlsx') as writer:
+    chainage_shift_df.to_excel(writer, sheet_name='chainage shift', index=False)
     wear_exception.to_excel(writer, sheet_name='wear exception', index=False)
     low_height_exception.to_excel(writer, sheet_name='low height exception', index=False)
     high_height_exception.to_excel(writer, sheet_name='high height exception', index=False)
