@@ -69,9 +69,9 @@ print('Selected: ' + os.path.basename(raw_data_path))
 # ---------- allow user to select csv files -------
 
 # --------- Load metadata ----------
-track_type = pd.read_excel(line + ' metadata.xlsx', sheet_name=track + ' track type')
-location_type = pd.read_excel(line + ' metadata.xlsx', sheet_name='location type')
-threshold = pd.read_excel(line + ' metadata.xlsx', sheet_name='threshold')
+track_type = pd.read_excel('./' + line + ' metadata.xlsx', sheet_name=track + ' track type')
+location_type = pd.read_excel('./' + line + ' metadata.xlsx', sheet_name='location type')
+threshold = pd.read_excel('./' + line + ' metadata.xlsx', sheet_name='threshold')
 # --------- Load metadata ----------
 print('Loading...')
 
@@ -552,7 +552,7 @@ if stagger_right['open_curve_L3'].any() \
     stagger_right_exception = stagger_right_exception[
         ['exception type', 'level', 'startKm', 'endKm', 'length',
          'maxValue', 'maxLocation', 'track type', 'location type']].reset_index()
-    stagger_right_exception['id'] = date + '_' + line + '_' + track + '_' + 'SL' + stagger_right_exception['index'].astype(str)
+    stagger_right_exception['id'] = date + '_' + line + '_' + track + '_' + 'SR' + stagger_right_exception['index'].astype(str)
     stagger_right_exception = stagger_right_exception[
         ['id', 'exception type', 'level', 'startKm', 'endKm', 'length', 'maxValue', 'maxLocation', 'track type',
          'location type']]
