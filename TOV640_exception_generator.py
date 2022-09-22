@@ -77,8 +77,12 @@ print('Selected: ' + os.path.basename(raw_data_path))
 # ---------- allow user to select csv files -------
 
 # --------- Load metadata ----------
-track_type = pd.read_excel('./' + line + ' metadata.xlsx', sheet_name=track + ' track type')
-overlap = pd.read_excel('./' + line + ' metadata.xlsx', sheet_name=track + ' Tension Length')
+if section in ['LMC', 'RAC', 'LOW S1']:
+    track_type = pd.read_excel('./' + line + ' metadata.xlsx', sheet_name=section + ' ' + track + ' track type')
+    overlap = pd.read_excel('./' + line + ' metadata.xlsx', sheet_name=section + ' ' + track + ' Tension Length')
+else:
+    track_type = pd.read_excel('./' + line + ' metadata.xlsx', sheet_name=track + ' track type')
+    overlap = pd.read_excel('./' + line + ' metadata.xlsx', sheet_name=track + ' Tension Length')
 threshold = pd.read_excel('./' + line + ' metadata.xlsx', sheet_name='threshold')
 # --------- Load metadata ----------
 print('Loading...')
