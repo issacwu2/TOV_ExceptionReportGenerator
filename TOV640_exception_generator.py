@@ -51,11 +51,13 @@ if line == 'EAL':
                     print('Please make sure you input correct section range, e.g. UNI-TAP')
                     section = input('Please input the section range:')
 
-
-track = input('UP/DN? : ')
-while not track in ['DN', 'UP']:
-    print('Please make sure you input either UP / DN')
+if section != 'LOW S1':
     track = input('UP/DN? : ')
+    while not track in ['DN', 'UP']:
+        print('Please make sure you input either UP / DN')
+        track = input('UP/DN? : ')
+else:
+    pass
 
 d = input('Date (YYYY/MM/DD) : ')
 while not re.match('^\d{4}\/\d{2}\/\d{2}$', d):
@@ -84,7 +86,7 @@ else:
     track_type = pd.read_excel('./' + line + ' metadata.xlsx', sheet_name=track + ' track type')
     overlap = pd.read_excel('./' + line + ' metadata.xlsx', sheet_name=track + ' Tension Length')
 threshold = pd.read_excel('./' + line + ' metadata.xlsx', sheet_name='threshold')
-# --------- Load metadata ----------
+# --------- Load metadata --------89
 print('Loading...')
 
 # ----------- for debugging ----------
