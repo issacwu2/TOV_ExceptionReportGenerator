@@ -1,3 +1,4 @@
+import numpy as np
 import pandas as pd
 import os
 import re
@@ -27,6 +28,12 @@ while not line in ['EAL', 'TML']:
     print('Please make sure you input correct line:')
     line = input('line:')
 
+if line == 'TML':
+    section = input('WRL/KSL/ETSE/MOL? :')
+    while not section in ['WRL', 'KSL', 'ETSE', 'MOL']:
+        print('Please make sure your input is either WRL/KSL/ETSE/MOL')
+        section = input('WRL/KSL/ETSE/MOL? :')
+
 if line == 'EAL':
     section = input('LMC? [y/n]: ')
     while not section in ['y', 'n']:
@@ -44,14 +51,15 @@ if line == 'EAL':
             while not section in ['y', 'n']:
                 section = input('LOW S1? [y/n]: ')
             if section == 'y':
-                section = 'LOW S1'
+                section = 'LOW'
+                track = 'S1'
             else:
                 section = input('Please input the section range, e.g. UNI-TAP:')
                 while not re.match('^[A-Z]{3}-[A-Z]{3}', section):
                     print('Please make sure you input correct section range, e.g. UNI-TAP')
                     section = input('Please input the section range:')
 
-if section != 'LOW S1':
+if section != 'LOW':
     track = input('UP/DN? : ')
     while not track in ['DN', 'UP']:
         print('Please make sure you input either UP / DN')
@@ -66,27 +74,31 @@ while not re.match('^\d{4}\/\d{2}\/\d{2}$', d):
 
 date = d.replace('/', '')
 
-print('select the data report in csv format after 3 seconds...')
-for i in range(3,0,-1):
+print('select the data report in .DATAC format after 1 second...')
+for i in range(1,0,-1):
     print(f"{i}", end="\r", flush=True)
     time.sleep(1)
 # ---------- allow user to select csv files -------
 root = tk.Tk()
 root.withdraw()
 raw_data_path = filedialog.askopenfilename()
-raw = pd.read_csv(raw_data_path, sep=';').apply(lambda x: x.str.strip() if x.dtype == "object" else x)
+raw = pd.read_csv(raw_data_path, sep=';', engine='python').apply(lambda x: x.str.strip() if x.dtype == "object" else x)
 print('Selected: ' + os.path.basename(raw_data_path))
 # ---------- allow user to select csv files -------
 
 # --------- Load metadata ----------
-if section in ['LMC', 'RAC', 'LOW S1']:
+if section in ['LMC', 'RAC', 'LOW', 'WRL', 'KSL', 'ETSE', 'MOL']:
     track_type = pd.read_excel('./' + line + ' metadata.xlsx', sheet_name=section + ' ' + track + ' track type')
     overlap = pd.read_excel('./' + line + ' metadata.xlsx', sheet_name=section + ' ' + track + ' Tension Length')
+    landmark = pd.read_excel('./' + line + ' metadata.xlsx', sheet_name=section + ' ' + track + ' Landmark')
 else:
     track_type = pd.read_excel('./' + line + ' metadata.xlsx', sheet_name=track + ' track type')
     overlap = pd.read_excel('./' + line + ' metadata.xlsx', sheet_name=track + ' Tension Length')
+    landmark = pd.read_excel('./' + line + ' metadata.xlsx', sheet_name=track + ' Landmark')
 threshold = pd.read_excel('./' + line + ' metadata.xlsx', sheet_name='threshold')
-# --------- Load metadata --------89
+
+overlap['Overlap'].fillna('N', inplace=True)
+# --------- Load metadata --------
 print('Loading...')
 
 # ----------- for debugging ----------
@@ -213,17 +225,44 @@ stagger_right['maxValue'] = stagger_right[['stagger1', 'stagger2', 'stagger3', '
 
 
 # ---------- load line related threshold from metadata ----------
-tangent_stagger_L1_min = threshold.loc[(threshold['Track Type'] == 'Tangent') & (threshold['Exc Type'] == 'Stagger L1')]['min'].values.item()
-tangent_stagger_L2_min = threshold.loc[(threshold['Track Type'] == 'Tangent') & (threshold['Exc Type'] == 'Stagger L2')]['min'].values.item()
-tangent_stagger_L2_max = threshold.loc[(threshold['Track Type'] == 'Tangent') & (threshold['Exc Type'] == 'Stagger L2')]['max'].values.item()
-tangent_stagger_L3_min = threshold.loc[(threshold['Track Type'] == 'Tangent') & (threshold['Exc Type'] == 'Stagger L3')]['min'].values.item()
-tangent_stagger_L3_max = threshold.loc[(threshold['Track Type'] == 'Tangent') & (threshold['Exc Type'] == 'Stagger L3')]['max'].values.item()
+if section =='KSL':
+    KSL_tangent_stagger_L1_min = threshold.loc[(threshold['Class'] == section) &
+                                               (threshold['Track Type'] == 'Tangent') &
+                                               (threshold['Exc Type'] == 'Stagger L1')]['min'].values.item()
+    KSL_tangent_stagger_L2_min = threshold.loc[(threshold['Class'] == section) &
+                                               (threshold['Track Type'] == 'Tangent') &
+                                               (threshold['Exc Type'] == 'Stagger L2')]['min'].values.item()
+    KSL_tangent_stagger_L2_max = threshold.loc[(threshold['Class'] == section) &
+                                               (threshold['Track Type'] == 'Tangent') &
+                                               (threshold['Exc Type'] == 'Stagger L2')]['max'].values.item()
+    KSL_tangent_stagger_L3_min = threshold.loc[(threshold['Class'] == section) &
+                                               (threshold['Track Type'] == 'Tangent') &
+                                               (threshold['Exc Type'] == 'Stagger L3')]['min'].values.item()
+    KSL_tangent_stagger_L3_max = threshold.loc[(threshold['Class'] == section) &
+                                               (threshold['Track Type'] == 'Tangent') &
+                                               (threshold['Exc Type'] == 'Stagger L3')]['max'].values.item()
 
-curve_stagger_L1_min = threshold.loc[(threshold['Track Type'] == 'Curve') & (threshold['Exc Type'] == 'Stagger L1')]['min'].values.item()
-curve_stagger_L2_min = threshold.loc[(threshold['Track Type'] == 'Curve') & (threshold['Exc Type'] == 'Stagger L2')]['min'].values.item()
-curve_stagger_L2_max = threshold.loc[(threshold['Track Type'] == 'Curve') & (threshold['Exc Type'] == 'Stagger L2')]['max'].values.item()
-curve_stagger_L3_min = threshold.loc[(threshold['Track Type'] == 'Curve') & (threshold['Exc Type'] == 'Stagger L3')]['min'].values.item()
-curve_stagger_L3_max = threshold.loc[(threshold['Track Type'] == 'Curve') & (threshold['Exc Type'] == 'Stagger L3')]['max'].values.item()
+    KSL_curve_stagger_L1_min = threshold.loc[(threshold['Class'] == section) &
+                                               (threshold['Track Type'] == 'Curve') &
+                                               (threshold['Exc Type'] == 'Stagger L1')]['min'].values.item()
+    KSL_curve_stagger_L3_min = threshold.loc[(threshold['Class'] == section) &
+                                               (threshold['Track Type'] == 'Curve') &
+                                               (threshold['Exc Type'] == 'Stagger L3')]['min'].values.item()
+    KSL_curve_stagger_L3_max = threshold.loc[(threshold['Class'] == section) &
+                                               (threshold['Track Type'] == 'Curve') &
+                                               (threshold['Exc Type'] == 'Stagger L3')]['max'].values.item()
+else:
+    tangent_stagger_L1_min = threshold.loc[(threshold['Class'] == 'both') & (threshold['Track Type'] == 'Tangent') & (threshold['Exc Type'] == 'Stagger L1')]['min'].values.item()
+    tangent_stagger_L2_min = threshold.loc[(threshold['Class'] == 'both') & (threshold['Track Type'] == 'Tangent') & (threshold['Exc Type'] == 'Stagger L2')]['min'].values.item()
+    tangent_stagger_L2_max = threshold.loc[(threshold['Class'] == 'both') & (threshold['Track Type'] == 'Tangent') & (threshold['Exc Type'] == 'Stagger L2')]['max'].values.item()
+    tangent_stagger_L3_min = threshold.loc[(threshold['Class'] == 'both') & (threshold['Track Type'] == 'Tangent') & (threshold['Exc Type'] == 'Stagger L3')]['min'].values.item()
+    tangent_stagger_L3_max = threshold.loc[(threshold['Class'] == 'both') & (threshold['Track Type'] == 'Tangent') & (threshold['Exc Type'] == 'Stagger L3')]['max'].values.item()
+
+    curve_stagger_L1_min = threshold.loc[(threshold['Class'] == 'both') & (threshold['Track Type'] == 'Curve') & (threshold['Exc Type'] == 'Stagger L1')]['min'].values.item()
+    curve_stagger_L2_min = threshold.loc[(threshold['Class'] == 'both') & (threshold['Track Type'] == 'Curve') & (threshold['Exc Type'] == 'Stagger L2')]['min'].values.item()
+    curve_stagger_L2_max = threshold.loc[(threshold['Class'] == 'both') & (threshold['Track Type'] == 'Curve') & (threshold['Exc Type'] == 'Stagger L2')]['max'].values.item()
+    curve_stagger_L3_min = threshold.loc[(threshold['Class'] == 'both') & (threshold['Track Type'] == 'Curve') & (threshold['Exc Type'] == 'Stagger L3')]['min'].values.item()
+    curve_stagger_L3_max = threshold.loc[(threshold['Class'] == 'both') & (threshold['Track Type'] == 'Curve') & (threshold['Exc Type'] == 'Stagger L3')]['max'].values.item()
 
 wear_L1_max = threshold.loc[threshold['Exc Type'] == 'Wire Wear L1']['max'].values.item()
 wear_L2_min = threshold.loc[threshold['Exc Type'] == 'Wire Wear L2']['min'].values.item()
@@ -233,18 +272,24 @@ high_height_L1_min = threshold.loc[threshold['Exc Type'] == 'High Height L1']['m
 high_height_L2_min = threshold.loc[threshold['Exc Type'] == 'High Height L2']['min'].values.item()
 high_height_L2_max = threshold.loc[threshold['Exc Type'] == 'High Height L2']['max'].values.item()
 
-HUH_LOW_low_height_L1_max = threshold.loc[(threshold['Location Type'] == 'HUH-LOW') & (threshold['Exc Type'] == 'Low Height L1')]['max'].values.item()
-HUH_LOW_low_height_L2_min = threshold.loc[(threshold['Location Type'] == 'HUH-LOW') & (threshold['Exc Type'] == 'Low Height L2')]['min'].values.item()
-HUH_LOW_low_height_L2_max = threshold.loc[(threshold['Location Type'] == 'HUH-LOW') & (threshold['Exc Type'] == 'Low Height L2')]['max'].values.item()
+if section in ['LMC', 'RAC', 'LOW', 'WRL', 'KSL', 'ETSE', 'MOL']:
+    class_low_height_L1_max = threshold.loc[(threshold['Class'] == section) & (threshold['Exc Type'] == 'Low Height L1')]['max'].values.item()
+    class_low_height_L2_min = threshold.loc[(threshold['Class'] == section) & (threshold['Exc Type'] == 'Low Height L2')]['min'].values.item()
+    class_low_height_L2_max = threshold.loc[(threshold['Class'] == section) & (threshold['Exc Type'] == 'Low Height L2')]['max'].values.item()
+else:
+    pass
 
-SHS_LMC_low_height_L1_max = threshold.loc[(threshold['Location Type'] == 'SHS-LMC') & (threshold['Exc Type'] == 'Low Height L1')]['max'].values.item()
-SHS_LMC_low_height_L2_min = threshold.loc[(threshold['Location Type'] == 'SHS-LMC') & (threshold['Exc Type'] == 'Low Height L2')]['min'].values.item()
-SHS_LMC_low_height_L2_max = threshold.loc[(threshold['Location Type'] == 'SHS-LMC') & (threshold['Exc Type'] == 'Low Height L2')]['max'].values.item()
+# if section == 'LMC':
+#     SHS_LMC_low_height_L1_max = threshold.loc[(threshold['Location Type'] == 'SHS-LMC') & (threshold['Exc Type'] == 'Low Height L1')]['max'].values.item()
+#     SHS_LMC_low_height_L2_min = threshold.loc[(threshold['Location Type'] == 'SHS-LMC') & (threshold['Exc Type'] == 'Low Height L2')]['min'].values.item()
+#     SHS_LMC_low_height_L2_max = threshold.loc[(threshold['Location Type'] == 'SHS-LMC') & (threshold['Exc Type'] == 'Low Height L2')]['max'].values.item()
+
 # ---------- load line related threshold from metadata ----------
 
 
 # ---------- low height exception ----------
-WH_cleaned_min['L2'] = (WH_cleaned_min.maxValue <= (SHS_LMC_low_height_L2_max if section == 'LMC' else HUH_LOW_low_height_L2_max))
+# WH_cleaned_min['L2'] = (WH_cleaned_min.maxValue <= (SHS_LMC_low_height_L2_max if section == 'LMC' else HUH_LOW_low_height_L2_max))
+WH_cleaned_min['L2'] = (WH_cleaned_min.maxValue <= class_low_height_L2_max)
 WH_cleaned_min['L2_id'] = (WH_cleaned_min.L2 != WH_cleaned_min.L2.shift()).cumsum()
 WH_cleaned_min['L2_count'] = WH_cleaned_min.groupby(['L2', 'L2_id']).cumcount(ascending=False) + 1
 WH_cleaned_min.loc[~WH_cleaned_min['L2'], 'L2_count'] = 0
@@ -277,11 +322,12 @@ if WH_cleaned_min['L2'].any():
         .drop('index', axis=1)
 
     # ------ defining alarm level depending on maxValue only ------
-    low_height_exception.loc[(low_height_exception['maxValue'] <= (SHS_LMC_low_height_L1_max if section == 'LMC' else HUH_LOW_low_height_L1_max)), 'level'] = 'L1'
+    # low_height_exception.loc[(low_height_exception['maxValue'] <= (SHS_LMC_low_height_L1_max if section == 'LMC' else HUH_LOW_low_height_L1_max)), 'level'] = 'L1'
+    low_height_exception.loc[(low_height_exception['maxValue'] <= class_low_height_L1_max), 'level'] = 'L1'
     low_height_exception['level'] = low_height_exception['level'].fillna('L2')
     low_height_exception = low_height_exception[
         ['exception type', 'level', 'startKm', 'endKm', 'length', 'maxValue', 'maxLocation', 'track type']].reset_index()
-    low_height_exception['id'] = date + '_' + line + '_' + track + '_' + 'LH' + low_height_exception['index'].astype(str)
+    low_height_exception['id'] = date + '_' + line + '_' + section + '_' + track + '_' + 'LH' + low_height_exception['index'].astype(str)
     low_height_exception = low_height_exception[
         ['id', 'exception type', 'level', 'startKm', 'endKm', 'length', 'maxValue', 'maxLocation', 'track type']]
     # ------ defining alarm level depending on maxValue only ------
@@ -326,7 +372,7 @@ if WH_cleaned_max['L2'].any():
     high_height_exception.loc[(high_height_exception['maxValue'] >= high_height_L1_min), 'level'] = 'L1'
     high_height_exception['level'] = high_height_exception['level'].fillna('L2')
     high_height_exception = high_height_exception[['exception type', 'level', 'startKm', 'endKm', 'length', 'maxValue', 'maxLocation', 'track type']].reset_index()
-    high_height_exception['id'] = date + '_' + line + '_' + track + '_' + 'HH' + high_height_exception['index'].astype(str)
+    high_height_exception['id'] = date + '_' + line + '_' + section + '_' + track + '_' + 'HH' + high_height_exception['index'].astype(str)
     high_height_exception = high_height_exception[
         ['id', 'exception type', 'level', 'startKm', 'endKm', 'length', 'maxValue', 'maxLocation', 'track type']]
     # ------ defining alarm level depending on maxValue only ------
@@ -371,7 +417,7 @@ if wear_min['L2'].any():
     wear_exception.loc[(wear_exception['maxValue'] <= wear_L1_max), 'level'] = 'L1'
     wear_exception['level'] = wear_exception['level'].fillna('L2')
     wear_exception = wear_exception[['exception type', 'level', 'startKm', 'endKm', 'length', 'maxValue', 'maxLocation', 'track type']].reset_index()
-    wear_exception['id'] = date + '_' + line + '_' + track + '_' + 'W' + wear_exception['index'].astype(str)
+    wear_exception['id'] = date + '_' + line + '_' + section + '_' + track + '_' + 'W' + wear_exception['index'].astype(str)
     wear_exception = wear_exception[
         ['id', 'exception type', 'level', 'startKm', 'endKm', 'length', 'maxValue', 'maxLocation', 'track type']]
     # ------ defining alarm level depending on maxValue only ------
@@ -381,8 +427,8 @@ else:
 # ---------- Wire Wear exception ----------
 
 # ---------- Left stagger exception ----------
-stagger_left['curve_L3'] = ((stagger_left.maxValue >= curve_stagger_L3_min) & (stagger_left['track type'] == 'Curve'))
-stagger_left['tangent_L3'] = ((stagger_left.maxValue >= tangent_stagger_L3_min) & (stagger_left['track type'] == 'Tangent'))
+stagger_left['curve_L3'] = ((stagger_left.maxValue >= (KSL_curve_stagger_L3_min if section == 'KSL' else curve_stagger_L3_min)) & (stagger_left['track type'] == 'Curve'))
+stagger_left['tangent_L3'] = ((stagger_left.maxValue >= (KSL_tangent_stagger_L3_min if section == 'KSL' else tangent_stagger_L3_min)) & (stagger_left['track type'] == 'Tangent'))
 stagger_left['curve_L3_id'] = (stagger_left.curve_L3 != stagger_left.curve_L3.shift()).cumsum()
 stagger_left['tangent_L3_id'] = (stagger_left.tangent_L3 != stagger_left.tangent_L3.shift()).cumsum()
 stagger_left['curve_L3_count'] = stagger_left.groupby(['curve_L3', 'curve_L3_id']).cumcount(ascending=False) + 1
@@ -420,21 +466,24 @@ if stagger_left['curve_L3'].any() or stagger_left['tangent_L3'].any():
         .drop('index', axis=1)
 
     # ------ defining alarm level depending on maxValue only ------
-    stagger_left_exception.loc[(stagger_left_exception['maxValue'] >= curve_stagger_L2_min) & (
-                stagger_left_exception['maxValue'] < curve_stagger_L2_max) & (
-                                            stagger_left_exception['track type'] == 'Curve'), 'level'] = 'L2'
-    stagger_left_exception.loc[(stagger_left_exception['maxValue'] >= curve_stagger_L1_min) & (
+    if section != 'KSL':
+        stagger_left_exception.loc[(stagger_left_exception['maxValue'] >= curve_stagger_L2_min) & (
+                    stagger_left_exception['maxValue'] < curve_stagger_L2_max) & (
+                                                stagger_left_exception['track type'] == 'Curve'), 'level'] = 'L2'
+    else:
+        pass
+    stagger_left_exception.loc[(stagger_left_exception['maxValue'] >= (KSL_curve_stagger_L1_min if section == 'KSL' else curve_stagger_L1_min)) & (
                 stagger_left_exception['track type'] == 'Curve'), 'level'] = 'L1'
-    stagger_left_exception.loc[(stagger_left_exception['maxValue'] >= tangent_stagger_L2_min) & (
-                stagger_left_exception['maxValue'] < tangent_stagger_L2_max) & (
+    stagger_left_exception.loc[(stagger_left_exception['maxValue'] >= (KSL_tangent_stagger_L2_min if section == 'KSL' else tangent_stagger_L2_min)) & (
+                stagger_left_exception['maxValue'] < (KSL_tangent_stagger_L2_max if section == 'KSL' else tangent_stagger_L2_max)) & (
                                             stagger_left_exception['track type'] == 'Tangent'), 'level'] = 'L2'
-    stagger_left_exception.loc[(stagger_left_exception['maxValue'] >= tangent_stagger_L1_min) & (
+    stagger_left_exception.loc[(stagger_left_exception['maxValue'] >= (KSL_tangent_stagger_L1_min if section == 'KSL' else tangent_stagger_L1_min)) & (
                 stagger_left_exception['track type'] == 'Tangent'), 'level'] = 'L1'
 
     stagger_left_exception['level'] = stagger_left_exception['level'].fillna('L3')
     stagger_left_exception = stagger_left_exception[
         ['exception type', 'level', 'startKm', 'endKm', 'length', 'maxValue', 'maxLocation', 'track type']].reset_index()
-    stagger_left_exception['id'] = date + '_' + line + '_' + track + '_' + 'SL' + stagger_left_exception['index'].astype(str)
+    stagger_left_exception['id'] = date + '_' + line + '_' + section + '_' + track + '_' + 'SL' + stagger_left_exception['index'].astype(str)
     stagger_left_exception = stagger_left_exception[
         ['id', 'exception type', 'level', 'startKm', 'endKm', 'length', 'maxValue', 'maxLocation', 'track type']]
     # ------ defining alarm level depending on maxValue only ------
@@ -444,8 +493,8 @@ else:
 # ---------- Left stagger exception ----------
 
 # ---------- Right stagger exception ----------
-stagger_right['curve_L3'] = ((stagger_right.maxValue <= -curve_stagger_L3_min) & (stagger_right['track type'] == 'Curve'))
-stagger_right['tangent_L3'] = ((stagger_right.maxValue <= -tangent_stagger_L3_min) & (stagger_right['track type'] == 'Tangent'))
+stagger_right['curve_L3'] = ((stagger_right.maxValue <= -(KSL_curve_stagger_L3_min if section == 'KSL' else curve_stagger_L3_min)) & (stagger_right['track type'] == 'Curve'))
+stagger_right['tangent_L3'] = ((stagger_right.maxValue <= -(KSL_tangent_stagger_L3_min if section == 'KSL' else tangent_stagger_L3_min)) & (stagger_right['track type'] == 'Tangent'))
 stagger_right['curve_L3_id'] = (stagger_right.curve_L3 != stagger_right.curve_L3.shift()).cumsum()
 stagger_right['tangent_L3_id'] = (stagger_right.tangent_L3 != stagger_right.tangent_L3.shift()).cumsum()
 stagger_right['curve_L3_count'] = stagger_right.groupby(['curve_L3', 'curve_L3_id']).cumcount(ascending=False) + 1
@@ -483,21 +532,24 @@ if stagger_right['curve_L3'].any() or stagger_right['tangent_L3'].any():
         .drop('index', axis=1)
 
     # ------ defining alarm level depends on maxValue only ------
-    stagger_right_exception.loc[(stagger_right_exception['maxValue'] <= -curve_stagger_L2_min) & (
-                stagger_right_exception['maxValue'] > -curve_stagger_L2_max) & (
-                                            stagger_right_exception['track type'] == 'Curve'), 'level'] = 'L2'
-    stagger_right_exception.loc[(stagger_right_exception['maxValue'] <= -curve_stagger_L1_min) & (
+    if section != 'KSL':
+        stagger_right_exception.loc[(stagger_right_exception['maxValue'] <= -curve_stagger_L2_min) & (
+                    stagger_right_exception['maxValue'] > -curve_stagger_L2_max) & (
+                                                stagger_right_exception['track type'] == 'Curve'), 'level'] = 'L2'
+    else:
+        pass
+    stagger_right_exception.loc[(stagger_right_exception['maxValue'] <= -(KSL_curve_stagger_L1_min if section == 'KSL' else curve_stagger_L1_min)) & (
                 stagger_right_exception['track type'] == 'Curve'), 'level'] = 'L1'
-    stagger_right_exception.loc[(stagger_right_exception['maxValue'] <= -tangent_stagger_L2_min) & (
-                stagger_right_exception['maxValue'] > -tangent_stagger_L2_max) & (
+    stagger_right_exception.loc[(stagger_right_exception['maxValue'] <= -(KSL_tangent_stagger_L2_min if section == 'KSL' else tangent_stagger_L2_min)) & (
+                stagger_right_exception['maxValue'] > -(KSL_tangent_stagger_L2_max if section == 'KSL' else tangent_stagger_L2_max)) & (
                                             stagger_right_exception['track type'] == 'Tangent'), 'level'] = 'L2'
-    stagger_right_exception.loc[(stagger_right_exception['maxValue'] <= -tangent_stagger_L1_min) & (
+    stagger_right_exception.loc[(stagger_right_exception['maxValue'] <= -(KSL_tangent_stagger_L1_min if section == 'KSL' else tangent_stagger_L1_min)) & (
                 stagger_right_exception['track type'] == 'Tangent'), 'level'] = 'L1'
     stagger_right_exception['level'] = stagger_right_exception['level'].fillna('L3')
     stagger_right_exception = stagger_right_exception[
         ['exception type', 'level', 'startKm', 'endKm', 'length',
          'maxValue', 'maxLocation', 'track type']].reset_index()
-    stagger_right_exception['id'] = date + '_' + line + '_' + track + '_' + 'SR' + stagger_right_exception['index'].astype(str)
+    stagger_right_exception['id'] = date + '_' + line + '_' + section + '_' + track + '_' + 'SR' + stagger_right_exception['index'].astype(str)
     stagger_right_exception = stagger_right_exception[
         ['id', 'exception type', 'level', 'startKm', 'endKm', 'length', 'maxValue', 'maxLocation', 'track type']]
     # ------ defining alarm level depends on maxValue only ------
@@ -506,23 +558,94 @@ else:
     stagger_right_exception = pd.DataFrame(columns=['id', 'exception type', 'level', 'startKm', 'endKm', 'length', 'maxValue', 'maxLocation', 'track type'])
 # ---------- Right stagger exception ----------
 
-# ---------- Remove stagger exception that is within overlap section ----------
-left_overlap_q = stagger_left_exception\
+# ---------- indicate exceptions within overlap section ----------
+hh_overlap_id = high_height_exception\
     .assign(key=1).merge(overlap.assign(key=1), on='key')\
-    .query('`Overlap` == "Y" & `maxLocation`.between(`FromKM`, `ToKM`)')\
-    .reset_index(drop=True)[['id']]
+    .query('`maxLocation`.between(`FromKM`, `ToKM`)', engine='python')\
+    .reset_index(drop=True)[['id', 'Overlap', 'Tension Length']]
 
-stagger_left_exception\
-    .drop(stagger_left_exception[stagger_left_exception['id'].isin(left_overlap_q['id'].to_list())].index, inplace=True)
+high_height_exception = pd.merge(high_height_exception, hh_overlap_id, on='id', how='outer')
 
-right_overlap_q = stagger_right_exception\
+lh_overlap_id = low_height_exception\
     .assign(key=1).merge(overlap.assign(key=1), on='key')\
-    .query('`Overlap` == "Y" & `maxLocation`.between(`FromKM`, `ToKM`)')\
-    .reset_index(drop=True)[['id']]
+    .query('`maxLocation`.between(`FromKM`, `ToKM`)', engine='python')\
+    .reset_index(drop=True)[['id', 'Overlap', 'Tension Length']]
 
-stagger_right_exception\
-    .drop(stagger_right_exception[stagger_right_exception['id'].isin(right_overlap_q['id'].to_list())].index, inplace=True)
-# ---------- Remove stagger exception that is within overlap section ----------
+low_height_exception = pd.merge(low_height_exception, lh_overlap_id, on='id', how='outer')
+
+left_overlap_id = stagger_left_exception\
+    .assign(key=1).merge(overlap.assign(key=1), on='key')\
+    .query('`maxLocation`.between(`FromKM`, `ToKM`)', engine='python')\
+    .reset_index(drop=True)[['id', 'Overlap', 'Tension Length']]
+
+stagger_left_exception = pd.merge(stagger_left_exception, left_overlap_id, on='id', how='outer')
+
+right_overlap_id = stagger_right_exception\
+    .assign(key=1).merge(overlap.assign(key=1), on='key')\
+    .query('`maxLocation`.between(`FromKM`, `ToKM`)', engine='python')\
+    .reset_index(drop=True)[['id', 'Overlap', 'Tension Length']]
+
+stagger_right_exception = pd.merge(stagger_right_exception, right_overlap_id, on='id', how='outer')
+
+wear_overlap_id = wear_exception\
+    .assign(key=1).merge(overlap.assign(key=1), on='key')\
+    .query('`maxLocation`.between(`FromKM`, `ToKM`)', engine='python')\
+    .reset_index(drop=True)[['id', 'Overlap', 'Tension Length']]
+
+wear_exception = pd.merge(wear_exception, wear_overlap_id, on='id', how='outer')
+# ---------- indicate exceptions within overlap section ----------
+
+# ---------- indicate Landmark for wear + stagger exceptions ----------
+hh_landmark_id = high_height_exception\
+    .assign(key=1).merge(landmark.assign(key=1), on='key')\
+    .query('`maxLocation`.between(`FromKM`, `ToKM`)', engine='python')\
+    .reset_index(drop=True)[['id', 'Landmark']]
+
+high_height_exception = pd.merge(high_height_exception, hh_landmark_id, on='id', how='outer')
+high_height_exception['Landmark'].fillna(value='typical', inplace=True)
+high_height_exception = high_height_exception[['id', 'exception type', 'level', 'startKm', 'endKm', 'length', 'maxValue',
+                                               'maxLocation', 'track type', 'Overlap', 'Tension Length', 'Landmark']]
+
+lh_landmark_id = low_height_exception\
+    .assign(key=1).merge(landmark.assign(key=1), on='key')\
+    .query('`maxLocation`.between(`FromKM`, `ToKM`)', engine='python')\
+    .reset_index(drop=True)[['id', 'Landmark']]
+
+low_height_exception = pd.merge(low_height_exception, lh_landmark_id, on='id', how='outer')
+low_height_exception['Landmark'].fillna(value='typical', inplace=True)
+low_height_exception = low_height_exception[['id', 'exception type', 'level', 'startKm', 'endKm', 'length', 'maxValue',
+                                               'maxLocation', 'track type', 'Overlap', 'Tension Length', 'Landmark']]
+
+left_landmark_id = stagger_left_exception\
+    .assign(key=1).merge(landmark.assign(key=1), on='key')\
+    .query('`maxLocation`.between(`FromKM`, `ToKM`)', engine='python')\
+    .reset_index(drop=True)[['id', 'Landmark']]
+
+stagger_left_exception = pd.merge(stagger_left_exception, left_landmark_id, on='id', how='outer')
+stagger_left_exception['Landmark'].fillna(value='typical', inplace=True)
+stagger_left_exception = stagger_left_exception[['id', 'exception type', 'level', 'startKm', 'endKm', 'length', 'maxValue',
+                                               'maxLocation', 'track type', 'Overlap', 'Tension Length', 'Landmark']]
+
+right_landmark_id = stagger_right_exception\
+    .assign(key=1).merge(landmark.assign(key=1), on='key')\
+    .query('`maxLocation`.between(`FromKM`, `ToKM`)', engine='python')\
+    .reset_index(drop=True)[['id', 'Landmark']]
+
+stagger_right_exception = pd.merge(stagger_right_exception, right_landmark_id, on='id', how='outer')
+stagger_right_exception['Landmark'].fillna(value='typical', inplace=True)
+stagger_right_exception = stagger_right_exception[['id', 'exception type', 'level', 'startKm', 'endKm', 'length', 'maxValue',
+                                               'maxLocation', 'track type', 'Overlap', 'Tension Length', 'Landmark']]
+
+wear_landmark_id = wear_exception\
+    .assign(key=1).merge(landmark.assign(key=1), on='key')\
+    .query('`maxLocation`.between(`FromKM`, `ToKM`)', engine='python')\
+    .reset_index(drop=True)[['id', 'Landmark']]
+
+wear_exception = pd.merge(wear_exception, wear_landmark_id, on='id', how='outer')
+wear_exception['Landmark'].fillna(value='typical', inplace=True)
+wear_exception = wear_exception[['id', 'exception type', 'level', 'startKm', 'endKm', 'length', 'maxValue',
+                                               'maxLocation', 'track type', 'Overlap', 'Tension Length', 'Landmark']]
+# ---------- indicate Landmark for wear + stagger exceptions ----------
 
 # ---------- output results ----------
 print('Saving as Excel at', datetime.now())
@@ -538,4 +661,4 @@ with pd.ExcelWriter(directory + '/' + date + '_' + line + '_' + track + '_' + se
     stagger_right_exception.to_excel(writer, sheet_name='stagger right exception', index=False)
 # ---------- output results ----------
 
-os.startfile(directory + '/' + date + '_' + line + '_' + track + '_' + section.replace('-', '_') + '_' + 'Exception Report.xlsx')
+# os.startfile(directory + '/' + date + '_' + line + '_' + section.replace('-', '_') + '_' + track + '_' + 'Exception Report.xlsx')

@@ -10,10 +10,12 @@ def clean_case(case):
     case_fix = case.drop(columns=['exception type_x', 'level_x', 'startKm_x', 'endKm_x',
                                     'length_x', 'maxValue_x', 'maxLocation_x', 'track type_x',
                                     'key', 'startKm_shift_x', 'endKm_shift_x',
-                                  'maxLocation_shift_x', 'startKm_shift_y', 'endKm_shift_y', 'maxLocation_shift_y'])\
+                                  'maxLocation_shift_x', 'startKm_shift_y', 'endKm_shift_y', 'maxLocation_shift_y', 'Overlap_x',
+                                  'Tension Length_x', 'Landmark_x'])\
         .rename({'id_y': 'id', 'exception type_y': 'exception type', 'level_y': 'level', 'startKm_y': 'startKm',
                  'endKm_y': 'endKm', 'length_y': 'length', 'maxValue_y': 'maxValue', 'maxLocation_y': 'maxLocation',
-                 'track type_y': 'track type'}, axis=1)
+                 'track type_y': 'track type', 'Overlap_y': 'Overlap', 'Tension Length_y': 'Tension Length',
+                 'Landmark_y': 'Landmark'}, axis=1)
     if 'previous' in case_fix.columns:
         case_fix['previous'] = case_fix['previous'].astype(str) + ', ' + case_fix['id_x'].astype(str)
     else:
@@ -21,13 +23,13 @@ def clean_case(case):
 
     case_fix = case_fix.reset_index().drop(columns=['index', 'id_x'])
     return case_fix[['id', 'exception type', 'level', 'startKm', 'endKm', 'length', 'maxValue',
-                     'maxLocation', 'track type', 'previous']]
+                     'maxLocation', 'track type', 'Overlap', 'Tension Length', 'Landmark', 'previous']]
 
 
 def find_repeated(df1, df2, df1_shift, df2_shift):
     if df1.empty or df2.empty:
         return pd.DataFrame(columns=['id', 'exception type', 'level', 'startKm', 'endKm', 'length',
-                                     'maxValue', 'maxLocation', 'track type', 'previous'])
+                                     'maxValue', 'maxLocation', 'track type', 'Overlap', 'Tension Length', 'Landmark', 'previous'])
     else:
         for all in ['startKm', 'endKm', 'maxLocation']:
 
