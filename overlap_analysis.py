@@ -18,50 +18,51 @@ for i in range(3,0,-1):
 root = tk.Tk()
 root.withdraw()
 raw_data_path = filedialog.askopenfilename()
-raw = pd.read_csv(raw_data_path, low_memory=False).rename({'Km': 'chainage',
-                                                 'StaggerWire1 [mm]': 'stagger1',
-                                                 'StaggerWire2 [mm]': 'stagger2',
-                                                 'StaggerWire3 [mm]': 'stagger3',
-                                                 'StaggerWire4 [mm]': 'stagger4',
-                                                 'WearWire1 [mm]': 'wear1',
-                                                 'WearWire2 [mm]': 'wear2',
-                                                 'WearWire3 [mm]': 'wear3',
-                                                 'WearWire4 [mm]': 'wear4',
-                                                 'HeightWire1 [mm]': 'height1',
-                                                 'HeightWire2 [mm]': 'height2',
-                                                 'HeightWire3 [mm]': 'height3',
-                                                 'HeightWire4 [mm]': 'height4'}, axis=1)
+raw = pd.read_csv(raw_data_path, low_memory=False, encoding='cp1252')
 # ---------- allow user to select csv files -------
 
 print('Loading...')
 
-raw['chainage'] = raw['chainage']\
-    .round(decimals=3)
+raw['Km'] = raw['Km'].round(decimals=3)
 
+raw = raw[['Km', 'HeightWire1 [mm]', 'HeightWire2 [mm]', 'HeightWire3 [mm]', 'HeightWire4 [mm]',
+           'StaggerWire1 [mm]', 'StaggerWire2 [mm]', 'StaggerWire3 [mm]', 'StaggerWire4 [mm]',
+           'WearWire1 [mm]', 'WearWire2 [mm]', 'WearWire3 [mm]', 'WearWire4 [mm]']]
+
+raw = raw.rename({'StaggerWire1 [mm]': 'stagger1',
+                  'StaggerWire2 [mm]': 'stagger2',
+                  'StaggerWire3 [mm]': 'stagger3',
+                  'StaggerWire4 [mm]': 'stagger4',
+                  'WearWire1 [mm]': 'wear1',
+                  'WearWire2 [mm]': 'wear2',
+                  'WearWire3 [mm]': 'wear3',
+                  'WearWire4 [mm]': 'wear4',
+                  'HeightWire1 [mm]': 'height1',
+                  'HeightWire2 [mm]': 'height2',
+                  'HeightWire3 [mm]': 'height3',
+                  'HeightWire4 [mm]': 'height4'}, axis=1)
 # ---------- To remove non-float data in float columns ----------
-for column in raw[
-	['height1', 'height2', 'height3', 'height4', 'wear1', 'wear2', 'wear3', 'wear4', 'stagger1', 'stagger2', 'stagger3',
-	 'stagger4']].select_dtypes(include=[object]).columns:
-	raw = raw[~raw[column].str.contains('[!@#$%^&*()a-zA-Z!@#$%^&*()]+$', na=False)]
+
+raw = raw.replace('1.#IO', '')
 
 raw[['height1', 'height2', 'height3', 'height4', 'wear1', 'wear2', 'wear3', 'wear4', 'stagger1', 'stagger2', 'stagger3',
-	 'stagger4']] = raw[['height1', 'height2', 'height3', 'height4', 'wear1', 'wear2', 'wear3', 'wear4', 'stagger1', 'stagger2', 'stagger3',
-	 'stagger4']].apply(pd.to_numeric)
+	 'stagger4']] = raw[['height1', 'height2', 'height3', 'height4', 'wear1', 'wear2', 'wear3', 'wear4', 'stagger1',
+                         'stagger2', 'stagger3', 'stagger4']].apply(pd.to_numeric)
 # ---------- To remove non-float data in float columns ----------
 
 # ---------- getting extreme stagger value by absolute max (regardless of +/- sign) ----------
-stagger_condensed = raw.groupby(raw.chainage)['stagger1', 'stagger2', 'stagger3', 'stagger4']\
+stagger_condensed = raw.groupby(raw.Km)[['stagger1', 'stagger2', 'stagger3', 'stagger4']]\
     .agg([lambda x: max(x, key=abs)])
 stagger_condensed.columns = ['stagger1', 'stagger2', 'stagger3', 'stagger4']
 # ---------- getting extreme stagger value by absolute max (regardless of +/- sign) ----------
 
 # ---------- getting extreme wear value by min value ----------
-wear_condensed = raw.groupby(raw.chainage)['wear1', 'wear2', 'wear3', 'wear4'].agg([lambda x: min(x, key=abs)])
+wear_condensed = raw.groupby(raw.Km)[['wear1', 'wear2', 'wear3', 'wear4']].agg([lambda x: min(x, key=abs)])
 wear_condensed.columns = ['wear1', 'wear2', 'wear3', 'wear4']
 # ---------- getting extreme wear value by min value ----------
 
 # ---------- getting extreme height value by min or max (conditional) ----------
-height_condensed = raw.groupby(raw.chainage).agg({'height1': ['min', 'max'], 'height2': ['min', 'max'], 'height3': ['min', 'max'], 'height4': ['min', 'max']})
+height_condensed = raw.groupby(raw.Km).agg({'height1': ['min', 'max'], 'height2': ['min', 'max'], 'height3': ['min', 'max'], 'height4': ['min', 'max']})
 height_condensed.columns = height_condensed.columns.map('_'.join)
 height_condensed.loc[(height_condensed['height1_max'] > 5299), 'height1'] = height_condensed['height1_max']
 height_condensed.loc[(height_condensed['height1_max'] <= 5299), 'height1'] = height_condensed['height1_min']

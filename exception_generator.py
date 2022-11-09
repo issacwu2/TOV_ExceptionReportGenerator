@@ -56,17 +56,21 @@ while not re.match('^\d{4}\/\d{2}\/\d{2}$', d):
 
 date = d.replace('/', '')
 
-print('select the data report in csv format after 3 seconds...')
-for i in range(3,0,-1):
-    print(f"{i}", end="\r", flush=True)
-    time.sleep(1)
-# ---------- allow user to select csv files -------
-root = tk.Tk()
-root.withdraw()
-raw_data_path = filedialog.askopenfilename()
-raw = pd.read_csv(raw_data_path, low_memory=False, encoding='cp1252')
-print('Selected: ' + os.path.basename(raw_data_path))
-# ---------- allow user to select csv files -------
+split = input('How many sets of TOV data? : ')
+raw = pd.DataFrame()
+for num in range(0, int(split)):
+    print('select the data report in csv format after 1 second...')
+    for i in range(1,0,-1):
+        print(f"{i}", end="\r", flush=True)
+        time.sleep(1)
+    # ---------- allow user to select csv files -------
+    root = tk.Tk()
+    root.withdraw()
+    split_raw_data_path = filedialog.askopenfilename()
+    split_raw = pd.read_csv(split_raw_data_path, low_memory=False, encoding='cp1252')
+    print('Selected: ' + os.path.basename(split_raw_data_path))
+    raw = pd.concat([raw, split_raw], axis=0, ignore_index=True)
+    # ---------- allow user to select csv files -------
 
 # --------- Load metadata ----------
 track_type = pd.read_excel('./' + line + ' metadata.xlsx', sheet_name=track + ' track type')
@@ -578,4 +582,4 @@ with pd.ExcelWriter(directory + '/' + date + '_' + line + '_' + track + '_' + 'E
     stagger_right_exception.to_excel(writer, sheet_name='stagger right exception', index=False)
 # ---------- output results ----------
 
-os.startfile(directory + '/' + date + '_' + line + '_' + track + '_' + 'Exception Report.xlsx')
+# os.startfile(directory + '/' + date + '_' + line + '_' + track + '_' + 'Exception Report.xlsx')
