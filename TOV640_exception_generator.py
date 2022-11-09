@@ -272,12 +272,15 @@ high_height_L1_min = threshold.loc[threshold['Exc Type'] == 'High Height L1']['m
 high_height_L2_min = threshold.loc[threshold['Exc Type'] == 'High Height L2']['min'].values.item()
 high_height_L2_max = threshold.loc[threshold['Exc Type'] == 'High Height L2']['max'].values.item()
 
-if section in ['LMC', 'RAC', 'LOW', 'WRL', 'KSL', 'ETSE', 'MOL']:
+if section in ['LMC', 'WRL', 'KSL', 'ETSE', 'MOL']:
     class_low_height_L1_max = threshold.loc[(threshold['Class'] == section) & (threshold['Exc Type'] == 'Low Height L1')]['max'].values.item()
     class_low_height_L2_min = threshold.loc[(threshold['Class'] == section) & (threshold['Exc Type'] == 'Low Height L2')]['min'].values.item()
     class_low_height_L2_max = threshold.loc[(threshold['Class'] == section) & (threshold['Exc Type'] == 'Low Height L2')]['max'].values.item()
-else:
-    pass
+elif line == 'EAL' and section != 'LMC':
+    class_low_height_L1_max = threshold.loc[(threshold['Class'] == 'both') & (threshold['Exc Type'] == 'Low Height L1')]['max'].values.item()
+    class_low_height_L2_min = threshold.loc[(threshold['Class'] == 'both') & (threshold['Exc Type'] == 'Low Height L2')]['min'].values.item()
+    class_low_height_L2_max = threshold.loc[(threshold['Class'] == 'both') & (threshold['Exc Type'] == 'Low Height L2')]['max'].values.item()
+
 
 # if section == 'LMC':
 #     SHS_LMC_low_height_L1_max = threshold.loc[(threshold['Location Type'] == 'SHS-LMC') & (threshold['Exc Type'] == 'Low Height L1')]['max'].values.item()
