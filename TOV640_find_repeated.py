@@ -4,7 +4,9 @@ from datetime import datetime
 import tkinter as tk
 from tkinter import filedialog
 import os
-
+import shutil
+import openpyxl
+import numpy as np
 
 def clean_case(case):
     case_fix = case.drop(columns=['exception type_x', 'level_x', 'startKm_x', 'endKm_x',
@@ -114,8 +116,10 @@ df1_LH = pd.read_excel(df1_path, sheet_name='low height exception')
 df1_HH = pd.read_excel(df1_path, sheet_name='high height exception')
 df1_SL = pd.read_excel(df1_path, sheet_name='stagger left exception')
 df1_SR = pd.read_excel(df1_path, sheet_name='stagger right exception')
-df1_SL = df1_SL.loc[df1_SL['level'] != 'L3']
-df1_SR = df1_SR.loc[df1_SR['level'] != 'L3']
+df1_SL = df1_SL.loc[df1_SL['Overlap'] != 'Y']
+df1_SR = df1_SR.loc[df1_SR['Overlap'] != 'Y']
+# df1_SL = df1_SL.loc[df1_SL['level'] != 'L3']
+# df1_SR = df1_SR.loc[df1_SR['level'] != 'L3']
 
 
 print('Select 2nd Exception Report after 3 seconds...')
@@ -129,9 +133,11 @@ df2_LH = pd.read_excel(df2_path, sheet_name='low height exception')
 df2_HH = pd.read_excel(df2_path, sheet_name='high height exception')
 df2_SL = pd.read_excel(df2_path, sheet_name='stagger left exception')
 df2_SR = pd.read_excel(df2_path, sheet_name='stagger right exception')
-df2_L3 = pd.concat([df2_SL.loc[df2_SL['level'] == 'L3'], df2_SR.loc[df2_SR['level'] == 'L3']])
-df2_SL = df2_SL.loc[df2_SL['level'] != 'L3']
-df2_SR = df2_SR.loc[df2_SR['level'] != 'L3']
+df2_SL = df2_SL.loc[df2_SL['Overlap'] != 'Y']
+df2_SR = df2_SR.loc[df2_SR['Overlap'] != 'Y']
+# df2_L3 = pd.concat([df2_SL.loc[df2_SL['level'] == 'L3'], df2_SR.loc[df2_SR['level'] == 'L3']])
+# df2_SL = df2_SL.loc[df2_SL['level'] != 'L3']
+# df2_SR = df2_SR.loc[df2_SR['level'] != 'L3']
 
 
 # ---------- only for AEL and TCL -------
@@ -147,9 +153,11 @@ if check == '3':
     df3_HH = pd.read_excel(df3_path, sheet_name='high height exception')
     df3_SL = pd.read_excel(df3_path, sheet_name='stagger left exception')
     df3_SR = pd.read_excel(df3_path, sheet_name='stagger right exception')
-    df3_L3 = pd.concat([df3_SL.loc[df3_SL['level'] == 'L3'], df3_SR.loc[df3_SR['level'] == 'L3']])
-    df3_SL = df3_SL.loc[df3_SL['level'] != 'L3']
-    df3_SR = df3_SR.loc[df3_SR['level'] != 'L3']
+    df3_SL = df3_SL.loc[df3_SL['Overlap'] != 'Y']
+    df3_SR = df3_SR.loc[df3_SR['Overlap'] != 'Y']
+    # df3_L3 = pd.concat([df3_SL.loc[df3_SL['level'] == 'L3'], df3_SR.loc[df3_SR['level'] == 'L3']])
+    # df3_SL = df3_SL.loc[df3_SL['level'] != 'L3']
+    # df3_SR = df3_SR.loc[df3_SR['level'] != 'L3']
 # ---------- only for AEL and TCL -------
 
 # ---------- allow user to select Exception Report files -------
@@ -184,21 +192,50 @@ if check == '2':
 elif check == '3':
     final_path = directory + '/' + os.path.basename(os.path.splitext(df3_path)[0]) + '_triple_repeated.xlsx'
 
-with pd.ExcelWriter(final_path) as writer:
-    if check == '3':
-        triple_repeated_W.sort_values('startKm').to_excel(writer, sheet_name='wear exception', index=False)
-        triple_repeated_LH.sort_values('startKm').to_excel(writer, sheet_name='low height exception', index=False)
-        triple_repeated_HH.sort_values('startKm').to_excel(writer, sheet_name='high height exception', index=False)
-        triple_repeated_SL.sort_values('startKm').to_excel(writer, sheet_name='stagger left exception', index=False)
-        triple_repeated_SR.sort_values('startKm').to_excel(writer, sheet_name='stagger right exception', index=False)
-        df3_L3.to_excel(writer, sheet_name='L3 alarms', index=False)
 
-    else:
-        repeated_W.sort_values('startKm').to_excel(writer, sheet_name='wear exception', index=False)
-        repeated_LH.sort_values('startKm').to_excel(writer, sheet_name='low height exception', index=False)
-        repeated_HH.sort_values('startKm').to_excel(writer, sheet_name='high height exception', index=False)
-        repeated_SL.sort_values('startKm').to_excel(writer, sheet_name='stagger left exception', index=False)
-        repeated_SR.sort_values('startKm').to_excel(writer, sheet_name='stagger right exception', index=False)
-        df2_L3.to_excel(writer, sheet_name='L3 alarms', index=False)
+# ----- save as -----
+temp = openpyxl.load_workbook('EAL metadata.xlsx')
+sheets = temp.sheetnames
+for s in sheets:
+    if s != 'template':
+        del temp[s]
+ss = temp['template']
+ss.title = 'Summary'
+temp.save(final_path)
+if check == '3':
+    update = pd.concat([triple_repeated_SL, triple_repeated_SR, triple_repeated_W, triple_repeated_HH, triple_repeated_LH], ignore_index=True, sort=False)
+else:
+    update = pd.concat([repeated_SL, repeated_SR, repeated_W, repeated_HH, repeated_LH], ignore_index=True, sort=False)
 
-os.startfile(final_path)
+update['support'] = np.nan
+update['empty1'] = np.nan
+update['empty2'] = np.nan
+update['empty3'] = np.nan
+update['empty4'] = np.nan
+update = update[['id', 'startKm', 'endKm', 'length', 'exception type', 'maxValue', 'maxLocation', 'support',
+                 'Tension Length', 'track type', 'level', 'empty1', 'empty2', 'empty3', 'empty4', 'previous']]
+
+
+with pd.ExcelWriter(final_path, mode='a', engine='openpyxl', if_sheet_exists='overlay') as writer:
+	update.to_excel(writer, sheet_name="Summary", startrow=2, header=None, index=False)
+# ----- save as -----
+
+
+# with pd.ExcelWriter(final_path) as writer:
+#     if check == '3':
+#         triple_repeated_W.sort_values('startKm').to_excel(writer, sheet_name='wear exception', index=False)
+#         triple_repeated_LH.sort_values('startKm').to_excel(writer, sheet_name='low height exception', index=False)
+#         triple_repeated_HH.sort_values('startKm').to_excel(writer, sheet_name='high height exception', index=False)
+#         triple_repeated_SL.sort_values('startKm').to_excel(writer, sheet_name='stagger left exception', index=False)
+#         triple_repeated_SR.sort_values('startKm').to_excel(writer, sheet_name='stagger right exception', index=False)
+#         df3_L3.to_excel(writer, sheet_name='L3 alarms', index=False)
+#
+#     else:
+#         repeated_W.sort_values('startKm').to_excel(writer, sheet_name='wear exception', index=False)
+#         repeated_LH.sort_values('startKm').to_excel(writer, sheet_name='low height exception', index=False)
+#         repeated_HH.sort_values('startKm').to_excel(writer, sheet_name='high height exception', index=False)
+#         repeated_SL.sort_values('startKm').to_excel(writer, sheet_name='stagger left exception', index=False)
+#         repeated_SR.sort_values('startKm').to_excel(writer, sheet_name='stagger right exception', index=False)
+#         df2_L3.to_excel(writer, sheet_name='L3 alarms', index=False)
+#
+# os.startfile(final_path)

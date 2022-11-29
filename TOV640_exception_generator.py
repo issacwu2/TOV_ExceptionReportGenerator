@@ -520,10 +520,10 @@ if stagger_right['curve_L3'].any() or stagger_right['tangent_L3'].any():
     stagger_right_exception = stagger_right_exception\
         .assign(key=1)\
         .merge(stagger_right_exception_full.assign(key=1), on='key')\
-        .query('`maxValue_max` == `maxValue` & `Km`.between(`Km_min`, `Km_max`)', engine='python')\
-        .drop(columns=['maxValue_min', 'key', 'maxValue', 'stagger1', 'stagger2', 'stagger3', 'stagger4',
+        .query('`maxValue_min` == `maxValue` & `Km`.between(`Km_min`, `Km_max`)', engine='python')\
+        .drop(columns=['maxValue_max', 'key', 'maxValue', 'stagger1', 'stagger2', 'stagger3', 'stagger4',
                        'curve_L3', 'tangent_L3', 'curve_L3_id', 'tangent_L3_id', 'curve_L3_count', 'tangent_L3_count'])\
-        .rename({'Km': 'maxLocation', 'Km_min': 'startKm', 'Km_max': 'endKm', 'maxValue_max': 'maxValue'}, axis=1)\
+        .rename({'Km': 'maxLocation', 'Km_min': 'startKm', 'Km_max': 'endKm', 'maxValue_min': 'maxValue'}, axis=1)\
         .reset_index()\
         .drop('index', axis=1)
 

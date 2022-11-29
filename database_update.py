@@ -5,6 +5,7 @@ import datetime
 import os
 import tkinter as tk
 from tkinter import filedialog
+import shutil
 
 # ----- function to find last row with non-empty value for appending new exception -----
 def get_maximum_rows(*, sheet_object):
@@ -64,8 +65,8 @@ print('Selected: ' + os.path.basename(new_exception_path))
 print('Loading......')
 # ----- user input -----
 
-# new_exception_path = 'C:/Users/issac/Coding Projects/TOV_ExceptionReportGenerator/20221029_TWL_UT_Exception Report_repeated.xlsx'
-# old_db_path = 'C:/Users/issac/Coding Projects/TOV_ExceptionReportGenerator/20221027_TWL Exception Follow-up Master List.xlsx'
+# new_exception_path = 'C:/Users/issac/Coding Projects/TOV_ExceptionReportGenerator/by new process/TWL/20221029_TWL_UT_Exception Report_repeated.xlsx'
+# old_db_path = 'C:/Users/issac/Coding Projects/TOV_ExceptionReportGenerator/by new process/TWL/20221027_TWL Exception Follow-up Master List.xlsx'
 
 # ----- read data -----
 old_db_complete = pd.read_excel(old_db_path, sheet_name='Summary', header=3)
@@ -94,15 +95,16 @@ L3_old = pd.read_excel(old_db_path, sheet_name='L3 alarms', header=3)
 # ----- L3 -----
 
 # ----- clear existing records before update -----
-workbook = openpyxl.load_workbook(old_db_path)
+updated_db_path = os.path.dirname(old_db_path) + '/' + datetime.date.today().strftime(format='%Y%m%d') + '_' + os.path.basename(old_db_path).rsplit('_', 1)[1]
+shutil.copy(old_db_path, updated_db_path)
+workbook = openpyxl.load_workbook(updated_db_path)
 L3_sheet_max_row = get_maximum_rows(sheet_object=workbook['L3 alarms'])
 summary_sheet_max_row = get_maximum_rows(sheet_object=workbook['Summary'])
 workbook['Summary'].delete_rows(5, summary_sheet_max_row)
 workbook['L3 alarms'].delete_rows(5, L3_sheet_max_row)
-workbook.save(old_db_path)
+workbook.save(updated_db_path)
 workbook.close()
 # ----- clear existing records before update -----
-
 # ----- read data -----
 
 
@@ -171,7 +173,7 @@ L3_new_selected = L3_new_selected[['ID', 'Date', 'Line', 'Exception', 'Level', '
 
 
 # ----- Append exception ID in column 'reoccurrence' if old db already had a follow up action -----
-append_re = find_repeated(old_db, new_exception_all, shift)[['ID', 'Reoccurrence', 'id']]
+append_re = find_repeated(old_db, new_exception_all, 0)[['ID', 'Reoccurrence', 'id']]
 append_re_grp = append_re.groupby(['ID', 'Reoccurrence'])['id'].apply(list).reset_index(name='reoccur-list')
 append_re_grp['Reoccurrence'] = append_re_grp['Reoccurrence'].apply(lambda x: f'{x:.0f}' if type(x) == float else x).astype(str)
 append_re_grp['reoccur-list-2'] = append_re_grp.apply(lambda x: np.append(x['Reoccurrence'], x['reoccur-list']), axis=1).apply(', '.join)
@@ -180,11 +182,18 @@ append_re_grp['reoccur-list-2'] = append_re_grp.apply(lambda x: np.append(x['Reo
 # append_re['Reoccurrence'] = append_re['Reoccurrence'].astype(str) + ', ' + append_re['id'].astype(str)
 
 old_db_update = old_db_complete.copy()
-old_db_update['Date'] = old_db_update['Date'].dt.date
-old_db_update['Target Date'] = old_db_update['Target Date'].dt.date
-old_db_update['Completion Date'] = old_db_update['Completion Date'].dt.date
+# old_db_update['Date'] = old_db_update['Date'].dt.date
+# old_db_update['Target Date'] = old_db_update['Target Date'].dt.date
+# old_db_update['Completion Date'] = old_db_update['Completion Date'].dt.date
+# old_db_update['Completion Date.1'] = old_db_update['Completion Date.1'].apply(lambda x: x.date() if isinstance(x, datetime.datetime) else x)
+# old_db_update['Target Date.1'] = old_db_update['Target Date.1'].dt.date
+
+old_db_update['Date'] = old_db_update['Date'].apply(lambda x: x.date() if isinstance(x, datetime.datetime) else x)
+old_db_update['Target Date'] = old_db_update['Target Date'].apply(lambda x: x.date() if isinstance(x, datetime.datetime) else x)
+old_db_update['Completion Date'] = old_db_update['Completion Date'].apply(lambda x: x.date() if isinstance(x, datetime.datetime) else x)
 old_db_update['Completion Date.1'] = old_db_update['Completion Date.1'].apply(lambda x: x.date() if isinstance(x, datetime.datetime) else x)
-old_db_update['Target Date.1'] = old_db_update['Target Date.1'].dt.date
+old_db_update['Target Date.1'] = old_db_update['Target Date.1'].apply(lambda x: x.date() if isinstance(x, datetime.datetime) else x)
+
 for index, row in append_re_grp.iterrows():
 	old_db_update.loc[(old_db_update['ID'] == row['ID']), 'Reoccurrence'] = row['reoccur-list-2']
 
@@ -199,7 +208,7 @@ old_db_update = old_db_update[~old_db_update['ID'].astype(str).str.contains('|'.
 
 # ----- Append new exceptions into old_db table section 0. -----
 new_selected_l = append_re['id'].values.tolist()
-new_selected = new_exception_all.query('~id.isin(@new_selected_l)')
+new_selected = new_exception_all.query('id != @new_selected_l')
 new_selected = new_selected.rename({'id': 'ID', 'exception type': 'Exception',
 									'level': 'Level',
 									'length': 'Length',
@@ -221,9 +230,9 @@ new_selected['Target Date'] = new_selected['Target Date'].dt.date
 summary_sheet_update = pd.concat([old_db_update, new_selected], ignore_index=True, sort=False)
 L3_sheet_update = pd.concat([L3_update, L3_new_selected], ignore_index=True, sort=False)
 
-with pd.ExcelWriter(old_db_path, engine='openpyxl', mode='a', if_sheet_exists='overlay') as writer:
-	summary_sheet_update.to_excel(writer, sheet_name='Summary', startrow=4, header=None, index=False)
-	L3_sheet_update.to_excel(writer, sheet_name='L3 alarms', startrow=4, header=None, index=False)
+with pd.ExcelWriter(updated_db_path, mode='a', engine='openpyxl', if_sheet_exists='overlay') as writer:
+	summary_sheet_update.to_excel(writer, sheet_name="Summary", startrow=4, header=None, index=False)
+	L3_sheet_update.to_excel(writer, sheet_name="L3 alarms", startrow=4, header=None, index=False)
 
 # with pd.ExcelWriter(old_db_path, engine='openpyxl', mode='a', if_sheet_exists='overlay') as writer:
 # 	old_db_update.to_excel(writer, sheet_name='Summary', startrow=4, header=None, index=False)
@@ -232,7 +241,7 @@ with pd.ExcelWriter(old_db_path, engine='openpyxl', mode='a', if_sheet_exists='o
 # 	L3_new_selected.to_excel(writer, sheet_name='L3 alarms', startrow=L3_sheet_max_row, header=None, index=False)
 
 # ----- rename DB name with today's date -----
-os.rename(old_db_path, os.path.dirname(old_db_path) + '/' + datetime.date.today().strftime(format='%Y%m%d') + '_' + os.path.basename(old_db_path).rsplit('_', 1)[1])
+#os.rename(old_db_path, os.path.dirname(old_db_path) + '/' + datetime.date.today().strftime(format='%Y%m%d') + '_' + os.path.basename(old_db_path).rsplit('_', 1)[1])
 print(os.path.basename(old_db_path).rsplit('_', 1)[1] + ' has been updated on: ' + datetime.datetime.today().strftime(format='%Y-%m-%d'))
 input('Press any button to close the program.....')
 # ----- rename DB name with today's date -----
